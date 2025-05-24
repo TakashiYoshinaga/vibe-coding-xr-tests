@@ -91,3 +91,16 @@ body {
 #controls-info {
     margin-top: 15px;
 }
+
+#mode-display {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background-color: rgba(0, 0, 0, 0.7);
+    color: #00ff00;
+    padding: 10px;
+    border-radius: 5px;
+    font-weight: bold;
+    z-index: 10;
+    pointer-events: none;
+}

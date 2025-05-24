@@ -83,16 +83,78 @@ export class Controls {
         this.controllerGrip2.add(controllerModelFactory.createControllerModel(this.controllerGrip2));
         this.scene.add(this.controllerGrip2);
         
-        // Add trigger event listeners for mode switching
-        this.controller1.addEventListener('selectstart', () => {
+        // Add trigger event listeners for mode switching with improved debugging
+        this.controller1.addEventListener('selectstart', (event) => {
+            console.log('Controller 1 select event received');
             this.toggleXRMode();
         });
         
-        this.controller2.addEventListener('selectstart', () => {
+        this.controller2.addEventListener('selectstart', (event) => {
+            console.log('Controller 2 select event received');
             this.toggleXRMode();
         });
+
+        // Create visible mode indicator for feedback
+        this.createModeIndicator();
+    }
+
+    // Create a visible indicator that shows current mode in VR space
+    createModeIndicator() {
+        // Create a text sprite to show the current mode
+        const canvas = document.createElement('canvas');
+        canvas.width = 256;
+        canvas.height = 128;
+        this.modeIndicatorContext = canvas.getContext('2d');
+        
+        // Create a sprite material using the canvas texture
+        const texture = new THREE.CanvasTexture(canvas);
+        const spriteMaterial = new THREE.SpriteMaterial({
+            map: texture,
+            transparent: true
+        });
+        
+        // Create and position the sprite
+        this.modeIndicator = new THREE.Sprite(spriteMaterial);
+        this.modeIndicator.scale.set(0.2, 0.1, 1);
+        this.modeIndicator.position.set(0, 0.1, -0.5); // Slightly above and in front of camera view
+        
+        // Update the indicator with initial mode
+        this.updateModeIndicator();
+        
+        // Add to the scene, will be visible only in VR
+        this.scene.add(this.modeIndicator);
     }
     
+    // Update the canvas texture of the mode indicator
+    updateModeIndicator() {
+        if (!this.modeIndicatorContext) return;
+        
+        const ctx = this.modeIndicatorContext;
+        const canvas = ctx.canvas;
+        
+        // Clear the canvas
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        // Draw a border
+        ctx.strokeStyle = this.isARMode ? '#00ff00' : '#0088ff';
+        ctx.lineWidth = 10;
+        ctx.strokeRect(5, 5, canvas.width - 10, canvas.height - 10);
+        
+        // Set text properties
+        ctx.font = '32px Arial';
+        ctx.fillStyle = 'white';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        
+        // Draw current mode text
+        const modeText = this.isARMode ? 'AR MODE' : 'VR MODE';
+        ctx.fillText(modeText, canvas.width/2, canvas.height/2);
+        
+        // Update the sprite texture
+        this.modeIndicator.material.map.needsUpdate = true;
+    }
+
     setupKeyboardControls() {
         document.addEventListener('keydown', (event) => {
             this.keysPressed[event.key.toLowerCase()] = true;
@@ -242,34 +304,56 @@ export class Controls {
     
     // XRモード切り替え関数
     toggleXRMode() {
+        // Store previous mode for logging
+        const previousMode = this.isARMode ? 'AR' : 'VR';
+        
+        // Toggle the mode
         this.isARMode = !this.isARMode;
-        console.log(`XR Mode switched to: ${this.isARMode ? 'AR' : 'VR'} mode`); // Enhanced logging
+        
+        // Log the change clearly
+        const newMode = this.isARMode ? 'AR' : 'VR';
+        console.log(`✅✅✅ XR Mode CHANGED: ${previousMode} -> ${newMode}`);
         
         // モードに応じて太陽系の表示設定を変更
         this.updateSolarSystemForMode();
         
-        // UIの更新
-        this.updateModeDisplay();
+        // Update visual indicator
+        this.updateModeIndicator();
+        
+        // Add haptic feedback if available
+        this.provideTactileFeedback();
     }
     
     // モードに応じた太陽系の設定更新
     updateSolarSystemForMode() {
         if (this.isARMode) {
             // ARモード: 小さくして手の前に配置
-            this.solarSystem.scale.set(0.05, 0.05, 0.05);
+            const newScale = 0.05;
+            this.solarSystem.scale.set(newScale, newScale, newScale);
             this.solarSystem.position.set(0, -0.2, -0.8); // より近く、少し下に
+            console.log(`Solar system scale set to ${newScale} (AR Mode)`);
         } else {
             // VRモード: 中程度のサイズで目の前に配置
-            this.solarSystem.scale.set(0.1, 0.1, 0.1);
+            const newScale = 0.1;
+            this.solarSystem.scale.set(newScale, newScale, newScale);
             this.solarSystem.position.set(0, -0.5, -2); // 2メートル前、少し下に
+            console.log(`Solar system scale set to ${newScale} (VR Mode)`);
         }
     }
     
-    // モード表示の更新
-    updateModeDisplay() {
-        // ここで画面上のモード表示を更新することができます
-        // 将来的にはVR空間内にテキストを表示することも可能
-        console.log(`Current XR Mode: ${this.isARMode ? 'AR (Augmented Reality)' : 'VR (Virtual Reality)'}`);
+    // Add haptic feedback when mode changes
+    provideTactileFeedback() {
+        const session = this.renderer.xr.getSession();
+        if (session) {
+            const inputSources = Array.from(session.inputSources);
+            inputSources.forEach(inputSource => {
+                if (inputSource.gamepad && inputSource.gamepad.hapticActuators && 
+                    inputSource.gamepad.hapticActuators[0]) {
+                    // Vibrate the controller for feedback - intensity, duration
+                    inputSource.gamepad.hapticActuators[0].pulse(1.0, 100);
+                }
+            });
+        }
     }
 
     // Handler for VR session start
