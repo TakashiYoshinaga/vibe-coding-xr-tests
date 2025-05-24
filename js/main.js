@@ -59,8 +59,8 @@ class SolarSystem {
     }
     
     setupLights() {
-        // Ambient light for general illumination
-        const ambientLight = new THREE.AmbientLight(0x404040, 0.5);
+        // Ambient light for general illumination - increased intensity for better planet visibility
+        const ambientLight = new THREE.AmbientLight(0x808080, 1.2);
         this.scene.add(ambientLight);
         
         // Point light at the sun's position
