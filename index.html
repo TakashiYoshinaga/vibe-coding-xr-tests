@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Solar System Viewer - WebXR</title>
+    <link rel="stylesheet" href="styles.css">
+    <!-- Import three.js from CDN -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+    <script type="module" src="js/main.js"></script>
+</head>
+<body>
+    <div id="container">
+        <div id="info">
+            <h1>Solar System Viewer</h1>
+            <div id="controls-info">
+                <h2>Controls:</h2>
+                <h3>Desktop:</h3>
+                <p>WASD - Move forward/backward/left/right</p>
+                <p>Q/E - Move up/down</p>
+                <p>Mouse - Look around</p>
+                <h3>VR (Meta Quest):</h3>
+                <p>Right Trigger - Zoom in</p>
+                <p>Left Trigger - Zoom out</p>
+            </div>
+            <button id="vr-button">Enter VR</button>
+        </div>
+        <button id="help-toggle" aria-label="Toggle help">?</button>
+    </div>
+    
+    <script>
+        // Add functionality to toggle help panel visibility
+        document.addEventListener('DOMContentLoaded', () => {
+            const helpToggle = document.getElementById('help-toggle');
+            const infoPanel = document.getElementById('info');
+            
+            helpToggle.addEventListener('click', () => {
+                if (infoPanel.style.display === 'none') {
+                    infoPanel.style.display = 'block';
+                } else {
+                    infoPanel.style.display = 'none';
+                }
+            });
+        });
+    </script>
+</body>
+</html>
