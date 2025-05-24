@@ -62,7 +62,6 @@ export class Controls {
         
         // XR Mode state management
         this.isARMode = false; // false = VR mode, true = AR mode
-        this.lastTriggerState = { left: false, right: false };
     }
     
     setupVRControllers() {
