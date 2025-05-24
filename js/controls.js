@@ -164,11 +164,29 @@ export class Controls {
         if (session) {
             const inputSources = Array.from(session.inputSources);
             
-            // Process each controller with joystick
+            // Process each controller
             inputSources.forEach(inputSource => {
                 if (inputSource.gamepad) {
                     const gamepad = inputSource.gamepad;
                     const axes = gamepad.axes;
+                    const buttons = gamepad.buttons;
+                    const handedness = inputSource.handedness;
+                    
+                    // Check trigger button state (typically the first button in the array)
+                    if (buttons && buttons.length > 0) {
+                        // Get trigger button state (pressed or not)
+                        const triggerPressed = buttons[0].pressed;
+                        
+                        // Check if the trigger state has changed from not pressed to pressed
+                        if (triggerPressed && !this.lastTriggerState[handedness]) {
+                            // Trigger pressed - toggle VR/AR mode
+                            this.toggleXRMode();
+                            console.log(`Trigger pressed on ${handedness} controller - Toggling VR/AR mode`);
+                        }
+                        
+                        // Update last trigger state
+                        this.lastTriggerState[handedness] = triggerPressed;
+                    }
                     
                     // Check if the controller has joystick input (axes data)
                     if (axes && axes.length >= 2) {
@@ -177,7 +195,7 @@ export class Controls {
                         let axisUsed = -1;
                         
                         // デバッグ: 全ての軸の値を表示
-                        if (inputSource.handedness === 'right') {
+                        if (handedness === 'right') {
                             console.log(`Right Controller Axes: [${axes.map((v, i) => `${i}:${v.toFixed(2)}`).join(', ')}]`);
                             
                             // Quest3での右コントローラーの軸パターンを試す
@@ -196,7 +214,7 @@ export class Controls {
                                 joystickY = axes[5];
                                 axisUsed = 5;
                             }
-                        } else if (inputSource.handedness === 'left') {
+                        } else if (handedness === 'left') {
                             console.log(`Left Controller Axes: [${axes.map((v, i) => `${i}:${v.toFixed(2)}`).join(', ')}]`);
                             
                             // 左コントローラーは動作しているので既存のロジックを保持
@@ -231,12 +249,13 @@ export class Controls {
                             this.solarSystem.scale.setScalar(clampedScale);
                             
                             // Enhanced debug output
-                            console.log(`✅ VR Joystick ACTIVE: Hand=${inputSource.handedness}, Axis=${axisUsed}, Y=${joystickY.toFixed(2)}, Scale=${clampedScale.toFixed(2)}`);
+                            console.log(`✅ VR Joystick ACTIVE: Hand=${handedness}, Axis=${axisUsed}, Y=${joystickY.toFixed(2)}, Scale=${clampedScale.toFixed(2)}`);
                         }
                     }
                 }
             });
-        }    }
+        }
+    }
     
     // XRモード切り替え関数
     toggleXRMode() {
