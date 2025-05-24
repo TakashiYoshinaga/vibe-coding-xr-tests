@@ -240,42 +240,15 @@ export class Controls {
     }
     
     // XRモード切り替え関数
-    async toggleXRMode() {
+    toggleXRMode() {
         this.isARMode = !this.isARMode;
-        console.log(`XR Mode switched to: ${this.isARMode ? 'AR' : 'VR'} mode`);
-
-        // XRセッションの切り替え
-        await this.switchXRSession();
-
+        console.log(`XR Mode switched to: ${this.isARMode ? 'AR' : 'VR'} mode`); // Enhanced logging
+        
         // モードに応じて太陽系の表示設定を変更
         this.updateSolarSystemForMode();
-
+        
         // UIの更新
         this.updateModeDisplay();
-    }
-
-    // XRセッションの切り替え
-    async switchXRSession() {
-        const session = this.renderer.xr.getSession();
-        if (session) {
-            await session.end();
-        }
-
-        // ARモードの場合はimmersive-ar、VRモードの場合はimmersive-vr
-        const mode = this.isARMode ? 'immersive-ar' : 'immersive-vr';
-
-        // ARモードの場合はパススルーを有効にする
-        const sessionInit = this.isARMode
-            ? { requiredFeatures: ['local', 'camera-access', 'dom-overlay'], domOverlay: { root: document.body } }
-            : { optionalFeatures: ['local-floor', 'bounded-floor'] };
-
-        // WebXRセッション開始
-        try {
-            const newSession = await navigator.xr.requestSession(mode, sessionInit);
-            this.renderer.xr.setSession(newSession);
-        } catch (e) {
-            console.warn(`Failed to start XR session (${mode}):`, e);
-        }
     }
     
     // モードに応じた太陽系の設定更新
