@@ -67,30 +67,6 @@ body {
     background-color: #3367d6;
 }
 
-#ar-button {
-    padding: 10px 15px;
-    background-color: #ff4081;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 16px;
-    pointer-events: auto;
-}
-
-#ar-button:hover {
-    background-color: #e91e63;
-}
-
-#xr-button-container {
-    position: absolute;
-    bottom: 20px;
-    right: 20px;
-    display: flex;
-    gap: 10px;
-    z-index: 30;
-}
-
 #help-toggle {
     position: absolute;
     bottom: 20px;
@@ -114,16 +90,4 @@ body {
 
 #controls-info {
     margin-top: 15px;
-}
-
-#xr-mode-info {
-    margin-top: 10px;
-    padding: 8px;
-    background-color: rgba(0, 0, 0, 0.5);
-    border-left: 3px solid #ff4081;
-    border-radius: 3px;
-}
-
-#xr-mode-info strong {
-    color: #ff4081;
 }
