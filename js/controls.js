@@ -51,6 +51,14 @@ export class Controls {
         
         // Setup VR controllers
         this.setupVRControllers();
+        
+        // Add session listeners to handle VR mode transitions
+        this.renderer.xr.addEventListener('sessionstart', this.onVRSessionStart.bind(this));
+        this.renderer.xr.addEventListener('sessionend', this.onVRSessionEnd.bind(this));
+        
+        // Store original scale and position for restoration when exiting VR
+        this.originalScale = new THREE.Vector3();
+        this.originalPosition = new THREE.Vector3();
     }
     
     setupVRControllers() {
@@ -153,6 +161,33 @@ export class Controls {
             });
             this.controller2.userData.hasEventListeners = true;
         }
+    }
+    
+    // Handler for VR session start
+    onVRSessionStart() {
+        // Store original scale and position for restoration when exiting VR
+        this.originalScale.copy(this.solarSystem.scale);
+        this.originalPosition.copy(this.solarSystem.position);
+        
+        // Scale down the solar system for a bird's-eye view
+        this.solarSystem.scale.set(0.2, 0.2, 0.2);
+        
+        // Position the solar system in front of the user
+        // Get the direction the camera is looking
+        const direction = new THREE.Vector3(0, 0, -1);
+        direction.applyQuaternion(this.camera.quaternion);
+        
+        // Position the solar system 2 meters in front of the user, slightly below eye level
+        this.solarSystem.position.copy(this.camera.position)
+            .add(direction.multiplyScalar(2)) // 2 meters in front
+            .sub(new THREE.Vector3(0, 0.5, 0)); // Slightly below eye level
+    }
+    
+    // Handler for VR session end
+    onVRSessionEnd() {
+        // Restore original scale and position
+        this.solarSystem.scale.copy(this.originalScale);
+        this.solarSystem.position.copy(this.originalPosition);
     }
     
     dispose() {
