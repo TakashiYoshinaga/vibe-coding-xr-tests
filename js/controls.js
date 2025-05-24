@@ -62,11 +62,7 @@ export class Controls {
         
         // XR Mode state management
         this.isARMode = false; // false = VR mode, true = AR mode
-        this.lastTriggerState = { 0: false, 1: false }; // Use controller index instead of handedness
-        
-        // Add visual feedback for mode switching
-        this.modeIndicator = null;
-        this.createModeIndicator();
+        this.lastTriggerState = { left: false, right: false };
     }
     
     setupVRControllers() {
@@ -87,18 +83,14 @@ export class Controls {
         this.controllerGrip2.add(controllerModelFactory.createControllerModel(this.controllerGrip2));
         this.scene.add(this.controllerGrip2);
         
-        // Add simple visual ray to controllers for debugging
-        const rayGeometry = new THREE.BufferGeometry().setFromPoints([
-            new THREE.Vector3(0, 0, 0),
-            new THREE.Vector3(0, 0, -1)
-        ]);
-        const rayMaterial = new THREE.LineBasicMaterial({ color: 0x00ff00 });
+        // Add trigger event listeners for mode switching
+        this.controller1.addEventListener('selectstart', () => {
+            this.toggleXRMode();
+        });
         
-        const ray1 = new THREE.Line(rayGeometry, rayMaterial);
-        const ray2 = new THREE.Line(rayGeometry, rayMaterial.clone());
-        
-        this.controller1.add(ray1);
-        this.controller2.add(ray2);
+        this.controller2.addEventListener('selectstart', () => {
+            this.toggleXRMode();
+        });
     }
     
     setupKeyboardControls() {
@@ -170,52 +162,68 @@ export class Controls {
         const session = this.renderer.xr.getSession();
         
         if (session) {
-            const inputSources = session.inputSources;
+            const inputSources = Array.from(session.inputSources);
             
-            // Process each controller by index
-            for (let i = 0; i < inputSources.length; i++) {
-                const inputSource = inputSources[i];
-                
-                if (inputSource && inputSource.gamepad) {
+            // Process each controller
+            inputSources.forEach(inputSource => {
+                if (inputSource.gamepad) {
                     const gamepad = inputSource.gamepad;
                     const axes = gamepad.axes;
                     const buttons = gamepad.buttons;
+                    const handedness = inputSource.handedness;
                     
-                    // Debug: Log button states
-                    if (buttons.length > 0 && buttons[0].value > 0.5) {
-                        console.log(`Controller ${i} - Trigger value: ${buttons[0].value}`);
-                    }
-                    
-                    // Check trigger button (index 0 for Meta Quest)
+                    // Check trigger button state (typically the first button in the array)
                     if (buttons && buttons.length > 0) {
-                        const triggerValue = buttons[0].value;
-                        const triggerPressed = triggerValue > 0.9; // Use threshold for full press
+                        // Get trigger button state (pressed or not)
+                        const triggerPressed = buttons[0].pressed;
                         
-                        // Check if this is a new press (not held)
-                        if (triggerPressed && !this.lastTriggerState[i]) {
-                            console.log(`✅ Trigger NEW PRESS on controller ${i}`);
+                        // Check if the trigger state has changed from not pressed to pressed
+                        if (triggerPressed && !this.lastTriggerState[handedness]) {
+                            // Trigger pressed - toggle VR/AR mode
                             this.toggleXRMode();
+                            console.log(`Trigger pressed on ${handedness} controller - Toggling VR/AR mode`);
                         }
                         
-                        // Update last state
-                        this.lastTriggerState[i] = triggerPressed;
+                        // Update last trigger state
+                        this.lastTriggerState[handedness] = triggerPressed;
                     }
                     
-                    // Handle joystick for scaling (existing code)
+                    // Check if the controller has joystick input (axes data)
                     if (axes && axes.length >= 2) {
-                        const handedness = inputSource.handedness || 'unknown';
+                        // Quest3 での軸配置を詳細にデバッグ
                         let joystickY = 0;
+                        let axisUsed = -1;
                         
-                        // For Meta Quest, try different axis configurations
-                        if (handedness === 'left' || i === 0) {
-                            // Left controller typically uses axes[1]
-                            joystickY = axes[1];
-                        } else if (handedness === 'right' || i === 1) {
-                            // Right controller might use axes[3]
-                            if (axes.length > 3) {
+                        // デバッグ: 全ての軸の値を表示
+                        if (handedness === 'right') {
+                            console.log(`Right Controller Axes: [${axes.map((v, i) => `${i}:${v.toFixed(2)}`).join(', ')}]`);
+                            
+                            // Quest3での右コントローラーの軸パターンを試す
+                            // パターン1: axes[3] (一般的なQuest3右ジョイスティックY軸)
+                            if (axes.length > 3 && Math.abs(axes[3]) > 0.1) {
                                 joystickY = axes[3];
-                            } else {
+                                axisUsed = 3;
+                            }
+                            // パターン2: axes[1] (標準的なY軸)
+                            else if (Math.abs(axes[1]) > 0.1) {
                                 joystickY = axes[1];
+                                axisUsed = 1;
+                            }
+                            // パターン3: axes[5] (一部のQuest3での配置)
+                            else if (axes.length > 5 && Math.abs(axes[5]) > 0.1) {
+                                joystickY = axes[5];
+                                axisUsed = 5;
+                            }
+                        } else if (handedness === 'left') {
+                            console.log(`Left Controller Axes: [${axes.map((v, i) => `${i}:${v.toFixed(2)}`).join(', ')}]`);
+                            
+                            // 左コントローラーは動作しているので既存のロジックを保持
+                            if (Math.abs(axes[1]) > 0.1) {
+                                joystickY = axes[1];
+                                axisUsed = 1;
+                            } else if (axes.length > 3 && Math.abs(axes[3]) > 0.1) {
+                                joystickY = axes[3];
+                                axisUsed = 3;
                             }
                         }
                         
@@ -224,8 +232,10 @@ export class Controls {
                         
                         if (Math.abs(joystickY) > deadzone) {
                             // Calculate scale change based on joystick position
-                            const scaleRate = 0.01;
-                            const scaleChange = -joystickY * scaleRate;
+                            // Forward (negative value) = zoom in (enlarge)
+                            // Backward (positive value) = zoom out (shrink)
+                            const scaleRate = 0.01; // Slower, more controlled scaling
+                            const scaleChange = -joystickY * scaleRate; // Negative to invert direction
                             
                             // Apply scaling
                             const currentScale = this.solarSystem.scale.x;
@@ -237,41 +247,39 @@ export class Controls {
                             const clampedScale = Math.max(minScale, Math.min(maxScale, newScale));
                             
                             this.solarSystem.scale.setScalar(clampedScale);
+                            
+                            // Enhanced debug output
+                            console.log(`✅ VR Joystick ACTIVE: Hand=${handedness}, Axis=${axisUsed}, Y=${joystickY.toFixed(2)}, Scale=${clampedScale.toFixed(2)}`);
                         }
                     }
                 }
-            }
+            });
         }
     }
     
     // XRモード切り替え関数
     toggleXRMode() {
         this.isARMode = !this.isARMode;
-        console.log(`🔄 XR Mode switched to: ${this.isARMode ? 'AR' : 'VR'}`);
+        console.log(`XR Mode switched to: ${this.isARMode ? 'AR' : 'VR'}`);
         
         // モードに応じて太陽系の表示設定を変更
         this.updateSolarSystemForMode();
         
         // UIの更新
         this.updateModeDisplay();
-        
-        // Show mode indicator briefly
-        this.showModeIndicator();
     }
     
     // モードに応じた太陽系の設定更新
     updateSolarSystemForMode() {
-        // Smooth transition animation
-        const targetScale = this.isARMode ? 0.02 : 0.2;
-        const targetPosition = this.isARMode ? 
-            new THREE.Vector3(0, -0.3, -0.5) : 
-            new THREE.Vector3(0, 0, 0);
-        
-        // Simple immediate update (you could add tweening here for smooth transitions)
-        this.solarSystem.scale.setScalar(targetScale);
-        this.solarSystem.position.copy(targetPosition);
-        
-        console.log(`${this.isARMode ? '📱 AR' : '🥽 VR'} Mode: Scale=${targetScale}, Position=${targetPosition.toArray()}`);
+        if (this.isARMode) {
+            // ARモード: 小さくして手の前に配置
+            this.solarSystem.scale.set(0.05, 0.05, 0.05);
+            this.solarSystem.position.set(0, -0.2, -0.8); // より近く、少し下に
+        } else {
+            // VRモード: 中程度のサイズで目の前に配置
+            this.solarSystem.scale.set(0.1, 0.1, 0.1);
+            this.solarSystem.position.set(0, -0.5, -2); // 2メートル前、少し下に
+        }
     }
     
     // モード表示の更新
@@ -296,58 +304,6 @@ export class Controls {
         // Restore original scale and position
         this.solarSystem.scale.copy(this.originalScale);
         this.solarSystem.position.copy(this.originalPosition);
-    }
-    
-    createModeIndicator() {
-        // Create a 3D text sprite to indicate the current mode
-        const loader = new THREE.FontLoader();
-        loader.load('fonts/helvetiker_regular.typeface.json', (font) => {
-            const textGeometry = new THREE.TextGeometry('Mode: VR', {
-                font: font,
-                size: 0.1,
-                height: 0.01,
-                curveSegments: 12,
-                bevelEnabled: true,
-                bevelThickness: 0.005,
-                bevelSize: 0.005,
-                bevelOffset: 0,
-                bevelSegments: 5
-            });
-            
-            const textMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
-            this.modeIndicator = new THREE.Mesh(textGeometry, textMaterial);
-            
-            // Position it in front of the camera
-            this.modeIndicator.position.set(0, 0, -1);
-            this.modeIndicator.visible = false; // Initially hidden
-            
-            this.scene.add(this.modeIndicator);
-        });
-    }
-    
-    showModeIndicator() {
-        if (this.modeIndicator && this.renderer.xr.isPresenting) {
-            // Get XR camera
-            const xrCamera = this.renderer.xr.getCamera();
-            
-            // Position indicator in front of camera
-            const offset = new THREE.Vector3(0, 0, -1.5); // 1.5 meters in front
-            offset.applyQuaternion(xrCamera.quaternion);
-            
-            this.modeIndicator.position.copy(xrCamera.position).add(offset);
-            this.modeIndicator.position.y += 0.2; // Slightly above center
-            
-            // Show the indicator
-            this.modeIndicator.visible = true;
-            
-            // Hide after 2 seconds
-            clearTimeout(this.modeIndicatorTimeout);
-            this.modeIndicatorTimeout = setTimeout(() => {
-                if (this.modeIndicator) {
-                    this.modeIndicator.visible = false;
-                }
-            }, 2000);
-        }
     }
     
     dispose() {
