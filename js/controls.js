@@ -45,8 +45,12 @@ export class Controls {
     setupVR() {
         // Enable WebXR
         this.renderer.xr.enabled = true;
-        
-        // Add VR button to document
+
+        // Remove existing VR button if present (safety)
+        const oldVRButton = document.getElementById('VRButton');
+        if (oldVRButton) oldVRButton.remove();
+
+        // Add VR button to document (let three.js handle it)
         document.body.appendChild(VRButton.createButton(this.renderer));
         
         // Setup VR controllers
