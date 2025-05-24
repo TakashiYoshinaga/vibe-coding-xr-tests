@@ -172,15 +172,11 @@ export class Controls {
         // Scale down the solar system for a bird's-eye view
         this.solarSystem.scale.set(0.2, 0.2, 0.2);
         
-        // Position the solar system in front of the user
-        // Get the direction the camera is looking
-        const direction = new THREE.Vector3(0, 0, -1);
-        direction.applyQuaternion(this.camera.quaternion);
+        // In VR, reset the solar system to a position directly in front of the user
+        // Use a fixed position relative to the VR camera's initial forward direction
         
-        // Position the solar system 2 meters in front of the user, slightly below eye level
-        this.solarSystem.position.copy(this.camera.position)
-            .add(direction.multiplyScalar(2)) // 2 meters in front
-            .sub(new THREE.Vector3(0, 0.5, 0)); // Slightly below eye level
+        // Position the solar system directly in front of the user and slightly below eye level
+        this.solarSystem.position.set(0, -0.5, -2); // 2 meters forward, 0.5 meters below eye level
     }
     
     // Handler for VR session end
