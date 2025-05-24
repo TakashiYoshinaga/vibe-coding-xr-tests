@@ -36,11 +36,10 @@ export class CelestialBody {
             // For planets, use standard material with some random surface variation
             material = new THREE.MeshStandardMaterial({
                 color: this.color,
-                roughness: 0.6,
-                metalness: 0.3,
-                flatShading: false,
-                emissive: this.color,
-                emissiveIntensity: 0.1 // A slight self-illumination to enhance visibility
+                roughness: 0.7,
+                metalness: 0.2,
+                flatShading: false
+                // Removed emissive property to allow proper shading from the sun light
             });
             
             // Add some random surface variation using noise
