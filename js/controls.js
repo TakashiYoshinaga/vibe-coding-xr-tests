@@ -145,21 +145,36 @@ export class Controls {
     }
     
     processVRInput() {
-        // Add event listeners for squeeze events (controller triggers)
-        if (!this.controller1.userData.hasEventListeners) {
-            this.controller1.addEventListener('selectstart', () => {
-                // Right controller - scale up (zoom in)
-                this.solarSystem.scale.multiplyScalar(1.01);
-            });
-            this.controller1.userData.hasEventListeners = true;
-        }
+        // Get gamepad data for joystick input
+        const session = this.renderer.xr.getSession();
         
-        if (!this.controller2.userData.hasEventListeners) {
-            this.controller2.addEventListener('selectstart', () => {
-                // Left controller - scale down (zoom out)
-                this.solarSystem.scale.multiplyScalar(0.99);
+        if (session) {
+            const inputSources = Array.from(session.inputSources);
+            
+            // Process each controller with joystick
+            inputSources.forEach(inputSource => {
+                if (inputSource.gamepad) {
+                    const axes = inputSource.gamepad.axes;
+                    
+                    // Check if the controller has joystick input (axes data)
+                    if (axes && axes.length >= 2) {
+                        // Use Y-axis of the joystick (axes[1]) for scaling
+                        // Y-axis: -1 (forward/up) to 1 (backward/down)
+                        const joystickY = axes[1];
+                        
+                        // Apply scaling based on joystick position
+                        // Forward (negative value) = zoom in (enlarge)
+                        // Backward (positive value) = zoom out (shrink)
+                        if (joystickY < -0.1) {
+                            // Joystick pushed forward - zoom in
+                            this.solarSystem.scale.multiplyScalar(1.01);
+                        } else if (joystickY > 0.1) {
+                            // Joystick pulled backward - zoom out
+                            this.solarSystem.scale.multiplyScalar(0.99);
+                        }
+                    }
+                }
             });
-            this.controller2.userData.hasEventListeners = true;
         }
     }
     
@@ -170,7 +185,8 @@ export class Controls {
         this.originalPosition.copy(this.solarSystem.position);
         
         // Scale down the solar system for a bird's-eye view
-        this.solarSystem.scale.set(0.2, 0.2, 0.2);
+        // Reduced scale to half of the previous value (from 0.2 to 0.1) for more comfortable viewing
+        this.solarSystem.scale.set(0.1, 0.1, 0.1);
         
         // In VR, reset the solar system to a position directly in front of the user
         // Use a fixed position relative to the VR camera's initial forward direction
