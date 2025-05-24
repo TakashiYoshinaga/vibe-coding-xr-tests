@@ -32,6 +32,23 @@
             </div>
             <button id="vr-button">Enter VR</button>
         </div>
+        <button id="help-toggle" aria-label="Toggle help">?</button>
     </div>
+    
+    <script>
+        // Add functionality to toggle help panel visibility
+        document.addEventListener('DOMContentLoaded', () => {
+            const helpToggle = document.getElementById('help-toggle');
+            const infoPanel = document.getElementById('info');
+            
+            helpToggle.addEventListener('click', () => {
+                if (infoPanel.style.display === 'none') {
+                    infoPanel.style.display = 'block';
+                } else {
+                    infoPanel.style.display = 'none';
+                }
+            });
+        });
+    </script>
 </body>
 </html>
