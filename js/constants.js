@@ -5,7 +5,7 @@ export const PLANETS = [
     {
         name: 'Mercury',
         radius: 0.38, // Relative size
-        distance: 5, // Distance from sun
+        distance: 7, // Distance from sun (increased for better spacing)
         rotationSpeed: 0.01, // Self-rotation speed
         orbitSpeed: 0.04, // Orbit speed around sun
         color: 0x8a8a8a, // Gray
@@ -14,7 +14,7 @@ export const PLANETS = [
     {
         name: 'Venus',
         radius: 0.95,
-        distance: 7,
+        distance: 10, // Increased for better spacing
         rotationSpeed: 0.005, // Slow retrograde rotation
         orbitSpeed: 0.015,
         color: 0xe39e1c, // Yellowish
@@ -23,7 +23,7 @@ export const PLANETS = [
     {
         name: 'Earth',
         radius: 1,
-        distance: 10,
+        distance: 14, // Increased for better spacing
         rotationSpeed: 0.02,
         orbitSpeed: 0.01,
         color: 0x3498db, // Blue
@@ -32,7 +32,7 @@ export const PLANETS = [
     {
         name: 'Mars',
         radius: 0.53,
-        distance: 15,
+        distance: 19, // Increased for better spacing
         rotationSpeed: 0.018,
         orbitSpeed: 0.008,
         color: 0xc0392b, // Red
@@ -40,8 +40,8 @@ export const PLANETS = [
     },
     {
         name: 'Jupiter',
-        radius: 11.2,
-        distance: 28,
+        radius: 5.5, // Reduced for better visual balance
+        distance: 32, // Increased for better spacing
         rotationSpeed: 0.04, // Fast rotation
         orbitSpeed: 0.002,
         color: 0xe67e22, // Orange-ish
@@ -49,8 +49,8 @@ export const PLANETS = [
     },
     {
         name: 'Saturn',
-        radius: 9.45,
-        distance: 47,
+        radius: 4.8, // Reduced for better visual balance
+        distance: 52, // Increased for better spacing
         rotationSpeed: 0.038,
         orbitSpeed: 0.0009,
         color: 0xf1c40f, // Yellow
@@ -58,7 +58,7 @@ export const PLANETS = [
     },
     {
         name: 'Uranus',
-        radius: 4.0,
+        radius: 3.0, // Reduced for better visual balance
         distance: 84,
         rotationSpeed: 0.03,
         orbitSpeed: 0.0004,
@@ -67,7 +67,7 @@ export const PLANETS = [
     },
     {
         name: 'Neptune',
-        radius: 3.88,
+        radius: 2.9, // Reduced for better visual balance
         distance: 140,
         rotationSpeed: 0.032,
         orbitSpeed: 0.0001,
@@ -78,6 +78,6 @@ export const PLANETS = [
 
 export const SUN = {
     name: 'Sun',
-    radius: 4, // Base size of the sun (scaled)
+    radius: 3, // Reduced size of the sun for better scale
     color: 0xffff00 // Yellow
 };
