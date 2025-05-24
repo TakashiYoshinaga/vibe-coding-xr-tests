@@ -162,15 +162,20 @@ export class Controls {
                         // Y-axis: -1 (forward/up) to 1 (backward/down)
                         const joystickY = axes[1];
                         
+                        // Define a scaling factor - make it more noticeable
+                        const scaleFactor = 1.02;
+                        
                         // Apply scaling based on joystick position
                         // Forward (negative value) = zoom in (enlarge)
                         // Backward (positive value) = zoom out (shrink)
                         if (joystickY < -0.1) {
                             // Joystick pushed forward - zoom in
-                            this.solarSystem.scale.multiplyScalar(1.01);
+                            const newScale = this.solarSystem.scale.x * scaleFactor;
+                            this.solarSystem.scale.set(newScale, newScale, newScale);
                         } else if (joystickY > 0.1) {
                             // Joystick pulled backward - zoom out
-                            this.solarSystem.scale.multiplyScalar(0.99);
+                            const newScale = this.solarSystem.scale.x / scaleFactor;
+                            this.solarSystem.scale.set(newScale, newScale, newScale);
                         }
                     }
                 }
