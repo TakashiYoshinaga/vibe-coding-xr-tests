@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { VRButton } from 'three/addons/webxr/VRButton.js';
+import { ARButton } from 'three/addons/webxr/ARButton.js';
 import { XRControllerModelFactory } from 'three/addons/webxr/XRControllerModelFactory.js';
 
 export class Controls {
@@ -46,8 +47,35 @@ export class Controls {
         // Enable WebXR
         this.renderer.xr.enabled = true;
         
-        // Add VR button to document
-        document.body.appendChild(VRButton.createButton(this.renderer));
+        // Create button container
+        const buttonContainer = document.createElement('div');
+        buttonContainer.id = 'xr-button-container';
+        buttonContainer.style.position = 'absolute';
+        buttonContainer.style.bottom = '20px';
+        buttonContainer.style.right = '20px';
+        buttonContainer.style.display = 'flex';
+        buttonContainer.style.gap = '10px';
+        document.body.appendChild(buttonContainer);
+        
+        // Add VR button
+        const vrButton = VRButton.createButton(this.renderer);
+        vrButton.id = 'vr-button';
+        vrButton.textContent = 'Enter VR';
+        buttonContainer.appendChild(vrButton);
+        
+        // Add AR button
+        const arButton = ARButton.createButton(this.renderer);
+        arButton.id = 'ar-button';
+        arButton.textContent = 'Enter AR';
+        arButton.style.backgroundColor = '#ff4081';
+        arButton.style.padding = '10px 15px';
+        arButton.style.color = 'white';
+        arButton.style.border = 'none';
+        arButton.style.borderRadius = '5px';
+        arButton.style.cursor = 'pointer';
+        arButton.style.fontSize = '16px';
+        arButton.style.pointerEvents = 'auto';
+        buttonContainer.appendChild(arButton);
         
         // Setup VR controllers
         this.setupVRControllers();
@@ -254,21 +282,101 @@ export class Controls {
     // モードに応じた太陽系の設定更新
     updateSolarSystemForMode() {
         if (this.isARMode) {
-            // ARモード: 小さくして手の前に配置
-            this.solarSystem.scale.set(0.05, 0.05, 0.05);
-            this.solarSystem.position.set(0, -0.2, -0.8); // より近く、少し下に
+            // ARモード: より小さくして手の前に配置
+            this.solarSystem.scale.set(0.02, 0.02, 0.02);
+            this.solarSystem.position.set(0, -0.1, -0.5); // より近く、少し下に
+            
+            // Change starfield visibility for AR
+            this.updateStarfieldVisibility(false);
         } else {
             // VRモード: 中程度のサイズで目の前に配置
             this.solarSystem.scale.set(0.1, 0.1, 0.1);
             this.solarSystem.position.set(0, -0.5, -2); // 2メートル前、少し下に
+            
+            // Ensure starfield is visible in VR
+            this.updateStarfieldVisibility(true);
         }
+    }
+    
+    // Update starfield visibility
+    updateStarfieldVisibility(visible) {
+        // Find the starfield in the scene
+        this.scene.traverse(object => {
+            // Starfield is typically a Points object with many vertices
+            if (object instanceof THREE.Points && 
+                object.geometry instanceof THREE.BufferGeometry && 
+                object.geometry.attributes.position &&
+                object.geometry.attributes.position.count > 1000) {
+                    
+                object.visible = visible;
+                console.log(`Starfield visibility set to: ${visible}`);
+            }
+        });
     }
     
     // モード表示の更新
     updateModeDisplay() {
-        // ここで画面上のモード表示を更新することができます
-        // 将来的にはVR空間内にテキストを表示することも可能
+        // Remove any existing mode indicator
+        if (this.modeIndicator) {
+            this.scene.remove(this.modeIndicator);
+            this.modeIndicator = null;
+        }
+
+        // Create a text indicator in 3D space showing the current mode
+        const mode = this.isARMode ? 'AR Mode' : 'VR Mode';
         console.log(`Current XR Mode: ${this.isARMode ? 'AR (Augmented Reality)' : 'VR (Virtual Reality)'}`);
+        
+        // Create a canvas texture for the mode indicator
+        const canvas = document.createElement('canvas');
+        canvas.width = 256;
+        canvas.height = 128;
+        const context = canvas.getContext('2d');
+        
+        // Set background color
+        context.fillStyle = this.isARMode ? 'rgba(255, 64, 129, 0.8)' : 'rgba(66, 133, 244, 0.8)';
+        context.fillRect(0, 0, canvas.width, canvas.height);
+        
+        // Add text
+        context.font = 'bold 48px Arial';
+        context.textAlign = 'center';
+        context.textBaseline = 'middle';
+        context.fillStyle = 'white';
+        context.fillText(mode, canvas.width / 2, canvas.height / 2);
+        
+        // Create a sprite using the canvas texture
+        const texture = new THREE.CanvasTexture(canvas);
+        const material = new THREE.SpriteMaterial({ map: texture });
+        this.modeIndicator = new THREE.Sprite(material);
+        
+        // Position the indicator at the top of the view
+        this.modeIndicator.scale.set(0.2, 0.1, 1);
+        this.modeIndicator.position.set(0, 0.15, -0.3);
+        
+        // Add indicator to the camera to ensure it's always visible
+        this.camera.add(this.modeIndicator);
+        
+        // Update instructions in the info panel
+        const infoPanel = document.getElementById('info');
+        const controlsInfo = document.getElementById('controls-info');
+        
+        if (infoPanel && controlsInfo) {
+            // Check if we already have XR mode instructions
+            let xrModeElement = document.getElementById('xr-mode-info');
+            
+            if (!xrModeElement) {
+                // Create new element if it doesn't exist
+                xrModeElement = document.createElement('div');
+                xrModeElement.id = 'xr-mode-info';
+                controlsInfo.appendChild(xrModeElement);
+            }
+            
+            // Update content
+            xrModeElement.innerHTML = `
+                <h3>XR Mode Controls:</h3>
+                <p>Current Mode: <strong>${this.isARMode ? 'AR' : 'VR'}</strong></p>
+                <p>Trigger Click - Toggle between AR/VR modes</p>
+            `;
+        }
     }
 
     // Handler for VR session start
@@ -277,8 +385,20 @@ export class Controls {
         this.originalScale.copy(this.solarSystem.scale);
         this.originalPosition.copy(this.solarSystem.position);
         
-        // 初期状態に基づいて設定を適用
+        // Detect if we're in AR mode based on session type
+        const session = this.renderer.xr.getSession();
+        if (session) {
+            this.isARMode = session.environmentBlendMode === 'additive' || 
+                           session.environmentBlendMode === 'alpha-blend';
+            console.log(`XR Session started: ${this.isARMode ? 'AR' : 'VR'} mode detected`);
+            console.log(`Environment blend mode: ${session.environmentBlendMode}`);
+        }
+        
+        // Apply settings based on current mode
         this.updateSolarSystemForMode();
+        
+        // Update the mode display in UI
+        this.updateModeDisplay();
     }
     
     // Handler for VR session end
@@ -286,6 +406,20 @@ export class Controls {
         // Restore original scale and position
         this.solarSystem.scale.copy(this.originalScale);
         this.solarSystem.position.copy(this.originalPosition);
+        
+        // Remove the mode indicator if it exists
+        if (this.modeIndicator) {
+            this.camera.remove(this.modeIndicator);
+            this.modeIndicator = null;
+        }
+        
+        // Reset mode to VR for next session
+        this.isARMode = false;
+        
+        // Make sure starfield is visible when returning to desktop
+        this.updateStarfieldVisibility(true);
+        
+        console.log('XR session ended, returned to desktop mode');
     }
     
     dispose() {
