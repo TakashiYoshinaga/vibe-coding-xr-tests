@@ -20,6 +20,7 @@ class SolarSystem {
             1000
         );
         this.camera.position.set(0, 20, 100);
+        this.camera.lookAt(0, 0, 0); // Ensure camera is looking at the center of the solar system
         
         // Create renderer
         this.renderer = new THREE.WebGLRenderer({ antialias: true });

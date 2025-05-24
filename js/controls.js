@@ -93,10 +93,6 @@ export class Controls {
     }
     
     processKeyboardInput() {
-        // Store original camera direction to maintain it during movement
-        const originalDirection = new THREE.Vector3();
-        this.camera.getWorldDirection(originalDirection);
-        
         // WASD movement
         if (this.keysPressed['w']) {
             this.camera.position.addScaledVector(this.getForwardVector(), this.moveSpeed);
@@ -118,9 +114,6 @@ export class Controls {
         if (this.keysPressed['e']) {
             this.camera.position.y += this.moveSpeed;
         }
-        
-        // Update orbit controls target to maintain camera's current look direction
-        this.orbitControls.target.copy(this.camera.position).add(originalDirection);
     }
     
     getForwardVector() {
@@ -130,8 +123,13 @@ export class Controls {
     }
     
     getRightVector() {
+        // Create a vector pointing to the right (x-axis)
         const vector = new THREE.Vector3(1, 0, 0);
+        // Apply camera's quaternion to transform it to camera's local space
         vector.applyQuaternion(this.camera.quaternion);
+        // Make sure the vector is perpendicular to world up (y-axis) to ensure horizontal movement
+        vector.y = 0;
+        vector.normalize();
         return vector;
     }
     
