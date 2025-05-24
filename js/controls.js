@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { VRButton } from 'three/addons/webxr/VRButton.js';
+import { XRControllerModelFactory } from 'three/addons/webxr/XRControllerModelFactory.js';
 
 export class Controls {
     constructor(camera, renderer, domElement, scene, solarSystem) {
@@ -48,7 +49,7 @@ export class Controls {
         this.scene.add(this.controller2);
         
         // Setup controller models
-        const controllerModelFactory = new THREE.XRControllerModelFactory();
+        const controllerModelFactory = new XRControllerModelFactory();
         
         this.controllerGrip1 = this.renderer.xr.getControllerGrip(0);
         this.controllerGrip1.add(controllerModelFactory.createControllerModel(this.controllerGrip1));
@@ -119,26 +120,34 @@ export class Controls {
     }
     
     processVRInput() {
-        // Check controllers for input
-        if (this.controller1 && this.controller1.gamepad) {
-            // Right controller (controller1) - Zoom in (scale up)
-            if (this.controller1.gamepad.buttons[0] && this.controller1.gamepad.buttons[0].pressed) {
-                this.solarSystem.scale.multiplyScalar(1.01); // Increase scale by 1%
-            }
+        // Add event listeners for squeeze events (controller triggers)
+        if (!this.controller1.userData.hasEventListeners) {
+            this.controller1.addEventListener('selectstart', () => {
+                // Right controller - scale up (zoom in)
+                this.solarSystem.scale.multiplyScalar(1.01);
+            });
+            this.controller1.userData.hasEventListeners = true;
         }
         
-        if (this.controller2 && this.controller2.gamepad) {
-            // Left controller (controller2) - Zoom out (scale down)
-            if (this.controller2.gamepad.buttons[0] && this.controller2.gamepad.buttons[0].pressed) {
-                this.solarSystem.scale.multiplyScalar(0.99); // Decrease scale by 1%
-            }
+        if (!this.controller2.userData.hasEventListeners) {
+            this.controller2.addEventListener('selectstart', () => {
+                // Left controller - scale down (zoom out)
+                this.solarSystem.scale.multiplyScalar(0.99);
+            });
+            this.controller2.userData.hasEventListeners = true;
         }
     }
     
     dispose() {
         this.orbitControls.dispose();
-        // Remove event listeners
-        document.removeEventListener('keydown', this.onKeyDown);
-        document.removeEventListener('keyup', this.onKeyUp);
+        
+        // We should use the same functions for cleanup to properly remove them
+        document.removeEventListener('keydown', (event) => {
+            this.keysPressed[event.key.toLowerCase()] = true;
+        });
+        
+        document.removeEventListener('keyup', (event) => {
+            this.keysPressed[event.key.toLowerCase()] = false;
+        });
     }
 }
