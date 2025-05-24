@@ -23,7 +23,10 @@ class SolarSystem {
         this.camera.lookAt(0, 0, 0); // Ensure camera is looking at the center of the solar system
         
         // Create renderer
-        this.renderer = new THREE.WebGLRenderer({ antialias: true });
+        this.renderer = new THREE.WebGLRenderer({ 
+            antialias: true,
+            alpha: true // Enable alpha for transparent background
+        });
         this.renderer.setPixelRatio(window.devicePixelRatio);
         this.renderer.setSize(window.innerWidth, window.innerHeight);
         this.renderer.outputColorSpace = THREE.SRGBColorSpace;
