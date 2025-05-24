@@ -28,6 +28,10 @@ export class Controls {
             RIGHT: THREE.MOUSE.PAN
         };
         
+        // Track if the user is actively controlling with the mouse
+        this.isMouseControlActive = false;
+        this.setupMouseListeners();
+        
         // Keyboard controls state
         this.keysPressed = {};
         this.moveSpeed = 0.5;
@@ -67,6 +71,20 @@ export class Controls {
         this.controllerGrip2 = this.renderer.xr.getControllerGrip(1);
         this.controllerGrip2.add(controllerModelFactory.createControllerModel(this.controllerGrip2));
         this.scene.add(this.controllerGrip2);
+    }
+    
+    setupMouseListeners() {
+        this.domElement.addEventListener('mousedown', () => {
+            this.isMouseControlActive = true;
+        });
+        
+        this.domElement.addEventListener('mouseup', () => {
+            this.isMouseControlActive = false;
+        });
+        
+        this.domElement.addEventListener('mouseleave', () => {
+            this.isMouseControlActive = false;
+        });
     }
     
     setupKeyboardControls() {
@@ -119,8 +137,10 @@ export class Controls {
             this.camera.position.y += this.moveSpeed;
         }
         
-        // Update orbit controls target to maintain camera's current look direction
-        this.orbitControls.target.copy(this.camera.position).add(originalDirection);
+        // Only update orbit controls target when not actively using mouse
+        if (!this.isMouseControlActive) {
+            this.orbitControls.target.copy(this.camera.position).add(originalDirection);
+        }
     }
     
     getForwardVector() {
@@ -130,8 +150,13 @@ export class Controls {
     }
     
     getRightVector() {
+        // Create a vector pointing to the right (x-axis)
         const vector = new THREE.Vector3(1, 0, 0);
+        // Apply camera's quaternion to transform it to camera's local space
         vector.applyQuaternion(this.camera.quaternion);
+        // Make sure the vector is perpendicular to world up (y-axis) to ensure horizontal movement
+        vector.y = 0;
+        vector.normalize();
         return vector;
     }
     
@@ -156,6 +181,19 @@ export class Controls {
     
     dispose() {
         this.orbitControls.dispose();
+        
+        // Remove mouse event listeners
+        this.domElement.removeEventListener('mousedown', () => {
+            this.isMouseControlActive = true;
+        });
+        
+        this.domElement.removeEventListener('mouseup', () => {
+            this.isMouseControlActive = false;
+        });
+        
+        this.domElement.removeEventListener('mouseleave', () => {
+            this.isMouseControlActive = false;
+        });
         
         // We should use the same functions for cleanup to properly remove them
         document.removeEventListener('keydown', (event) => {
