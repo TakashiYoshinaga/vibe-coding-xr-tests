@@ -169,24 +169,7 @@ export class Controls {
                 if (inputSource.gamepad) {
                     const gamepad = inputSource.gamepad;
                     const axes = gamepad.axes;
-                    const buttons = gamepad.buttons;
                     const handedness = inputSource.handedness;
-                    
-                    // Check trigger button state (typically the first button in the array)
-                    if (buttons && buttons.length > 0) {
-                        // Get trigger button state (pressed or not)
-                        const triggerPressed = buttons[0].pressed;
-                        
-                        // Check if the trigger state has changed from not pressed to pressed
-                        if (triggerPressed && !this.lastTriggerState[handedness]) {
-                            // Trigger pressed - toggle VR/AR mode
-                            this.toggleXRMode();
-                            console.log(`Trigger pressed on ${handedness} controller - Toggling VR/AR mode`);
-                        }
-                        
-                        // Update last trigger state
-                        this.lastTriggerState[handedness] = triggerPressed;
-                    }
                     
                     // Check if the controller has joystick input (axes data)
                     if (axes && axes.length >= 2) {
@@ -260,7 +243,7 @@ export class Controls {
     // XRモード切り替え関数
     toggleXRMode() {
         this.isARMode = !this.isARMode;
-        console.log(`XR Mode switched to: ${this.isARMode ? 'AR' : 'VR'}`);
+        console.log(`XR Mode switched to: ${this.isARMode ? 'AR' : 'VR'} mode`); // Enhanced logging
         
         // モードに応じて太陽系の表示設定を変更
         this.updateSolarSystemForMode();
