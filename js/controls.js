@@ -59,6 +59,10 @@ export class Controls {
         // Store original scale and position for restoration when exiting VR
         this.originalScale = new THREE.Vector3();
         this.originalPosition = new THREE.Vector3();
+        
+        // XR Mode state management
+        this.isARMode = false; // false = VR mode, true = AR mode
+        this.lastTriggerState = { left: false, right: false };
     }
     
     setupVRControllers() {
@@ -78,6 +82,15 @@ export class Controls {
         this.controllerGrip2 = this.renderer.xr.getControllerGrip(1);
         this.controllerGrip2.add(controllerModelFactory.createControllerModel(this.controllerGrip2));
         this.scene.add(this.controllerGrip2);
+        
+        // Add trigger event listeners for mode switching
+        this.controller1.addEventListener('selectstart', () => {
+            this.toggleXRMode();
+        });
+        
+        this.controller2.addEventListener('selectstart', () => {
+            this.toggleXRMode();
+        });
     }
     
     setupKeyboardControls() {
@@ -223,24 +236,48 @@ export class Controls {
                     }
                 }
             });
+        }    }
+    
+    // XRモード切り替え関数
+    toggleXRMode() {
+        this.isARMode = !this.isARMode;
+        console.log(`XR Mode switched to: ${this.isARMode ? 'AR' : 'VR'}`);
+        
+        // モードに応じて太陽系の表示設定を変更
+        this.updateSolarSystemForMode();
+        
+        // UIの更新
+        this.updateModeDisplay();
+    }
+    
+    // モードに応じた太陽系の設定更新
+    updateSolarSystemForMode() {
+        if (this.isARMode) {
+            // ARモード: 小さくして手の前に配置
+            this.solarSystem.scale.set(0.05, 0.05, 0.05);
+            this.solarSystem.position.set(0, -0.2, -0.8); // より近く、少し下に
+        } else {
+            // VRモード: 中程度のサイズで目の前に配置
+            this.solarSystem.scale.set(0.1, 0.1, 0.1);
+            this.solarSystem.position.set(0, -0.5, -2); // 2メートル前、少し下に
         }
     }
     
+    // モード表示の更新
+    updateModeDisplay() {
+        // ここで画面上のモード表示を更新することができます
+        // 将来的にはVR空間内にテキストを表示することも可能
+        console.log(`Current XR Mode: ${this.isARMode ? 'AR (Augmented Reality)' : 'VR (Virtual Reality)'}`);
+    }
+
     // Handler for VR session start
     onVRSessionStart() {
         // Store original scale and position for restoration when exiting VR
         this.originalScale.copy(this.solarSystem.scale);
         this.originalPosition.copy(this.solarSystem.position);
         
-        // Scale down the solar system for a bird's-eye view
-        // Reduced scale to half of the previous value (from 0.2 to 0.1) for more comfortable viewing
-        this.solarSystem.scale.set(0.1, 0.1, 0.1);
-        
-        // In VR, reset the solar system to a position directly in front of the user
-        // Use a fixed position relative to the VR camera's initial forward direction
-        
-        // Position the solar system directly in front of the user and slightly below eye level
-        this.solarSystem.position.set(0, -0.5, -2); // 2 meters forward, 0.5 meters below eye level
+        // 初期状態に基づいて設定を適用
+        this.updateSolarSystemForMode();
     }
     
     // Handler for VR session end
