@@ -159,22 +159,41 @@ export class Controls {
                     
                     // Check if the controller has joystick input (axes data)
                     if (axes && axes.length >= 2) {
-                        // For Meta Quest controllers:
-                        // Right controller: axes[0] = X, axes[1] = Y (primary joystick)
-                        // Left controller: axes[2] = X, axes[3] = Y (secondary joystick) 
-                        
+                        // Quest3 での軸配置を詳細にデバッグ
                         let joystickY = 0;
+                        let axisUsed = -1;
                         
-                        // Try different axis configurations based on controller
+                        // デバッグ: 全ての軸の値を表示
                         if (inputSource.handedness === 'right') {
-                            // Right controller - use primary joystick Y-axis
-                            joystickY = axes[1] || 0;
+                            console.log(`Right Controller Axes: [${axes.map((v, i) => `${i}:${v.toFixed(2)}`).join(', ')}]`);
+                            
+                            // Quest3での右コントローラーの軸パターンを試す
+                            // パターン1: axes[3] (一般的なQuest3右ジョイスティックY軸)
+                            if (axes.length > 3 && Math.abs(axes[3]) > 0.1) {
+                                joystickY = axes[3];
+                                axisUsed = 3;
+                            }
+                            // パターン2: axes[1] (標準的なY軸)
+                            else if (Math.abs(axes[1]) > 0.1) {
+                                joystickY = axes[1];
+                                axisUsed = 1;
+                            }
+                            // パターン3: axes[5] (一部のQuest3での配置)
+                            else if (axes.length > 5 && Math.abs(axes[5]) > 0.1) {
+                                joystickY = axes[5];
+                                axisUsed = 5;
+                            }
                         } else if (inputSource.handedness === 'left') {
-                            // Left controller - try both primary and secondary Y-axis
-                            joystickY = axes[1] || axes[3] || 0;
-                        } else {
-                            // Fallback: try first available Y-axis
-                            joystickY = axes[1] || 0;
+                            console.log(`Left Controller Axes: [${axes.map((v, i) => `${i}:${v.toFixed(2)}`).join(', ')}]`);
+                            
+                            // 左コントローラーは動作しているので既存のロジックを保持
+                            if (Math.abs(axes[1]) > 0.1) {
+                                joystickY = axes[1];
+                                axisUsed = 1;
+                            } else if (axes.length > 3 && Math.abs(axes[3]) > 0.1) {
+                                joystickY = axes[3];
+                                axisUsed = 3;
+                            }
                         }
                         
                         // Apply deadzone to prevent accidental input
@@ -198,8 +217,8 @@ export class Controls {
                             
                             this.solarSystem.scale.setScalar(clampedScale);
                             
-                            // Debug output (remove in production)
-                            console.log(`VR Joystick: Y=${joystickY.toFixed(2)}, Scale=${clampedScale.toFixed(2)}, Hand=${inputSource.handedness}`);
+                            // Enhanced debug output
+                            console.log(`✅ VR Joystick ACTIVE: Hand=${inputSource.handedness}, Axis=${axisUsed}, Y=${joystickY.toFixed(2)}, Scale=${clampedScale.toFixed(2)}`);
                         }
                     }
                 }
