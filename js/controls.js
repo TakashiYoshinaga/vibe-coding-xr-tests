@@ -28,10 +28,6 @@ export class Controls {
             RIGHT: THREE.MOUSE.PAN
         };
         
-        // Track if the user is actively controlling with the mouse
-        this.isMouseControlActive = false;
-        this.setupMouseListeners();
-        
         // Keyboard controls state
         this.keysPressed = {};
         this.moveSpeed = 0.5;
@@ -73,20 +69,6 @@ export class Controls {
         this.scene.add(this.controllerGrip2);
     }
     
-    setupMouseListeners() {
-        this.domElement.addEventListener('mousedown', () => {
-            this.isMouseControlActive = true;
-        });
-        
-        this.domElement.addEventListener('mouseup', () => {
-            this.isMouseControlActive = false;
-        });
-        
-        this.domElement.addEventListener('mouseleave', () => {
-            this.isMouseControlActive = false;
-        });
-    }
-    
     setupKeyboardControls() {
         document.addEventListener('keydown', (event) => {
             this.keysPressed[event.key.toLowerCase()] = true;
@@ -111,10 +93,6 @@ export class Controls {
     }
     
     processKeyboardInput() {
-        // Store original camera direction to maintain it during movement
-        const originalDirection = new THREE.Vector3();
-        this.camera.getWorldDirection(originalDirection);
-        
         // WASD movement
         if (this.keysPressed['w']) {
             this.camera.position.addScaledVector(this.getForwardVector(), this.moveSpeed);
@@ -135,11 +113,6 @@ export class Controls {
         }
         if (this.keysPressed['e']) {
             this.camera.position.y += this.moveSpeed;
-        }
-        
-        // Only update orbit controls target when not actively using mouse
-        if (!this.isMouseControlActive) {
-            this.orbitControls.target.copy(this.camera.position).add(originalDirection);
         }
     }
     
@@ -181,19 +154,6 @@ export class Controls {
     
     dispose() {
         this.orbitControls.dispose();
-        
-        // Remove mouse event listeners
-        this.domElement.removeEventListener('mousedown', () => {
-            this.isMouseControlActive = true;
-        });
-        
-        this.domElement.removeEventListener('mouseup', () => {
-            this.isMouseControlActive = false;
-        });
-        
-        this.domElement.removeEventListener('mouseleave', () => {
-            this.isMouseControlActive = false;
-        });
         
         // We should use the same functions for cleanup to properly remove them
         document.removeEventListener('keydown', (event) => {
