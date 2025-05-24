@@ -64,8 +64,9 @@ class SolarSystem {
         const ambientLight = new THREE.AmbientLight(0x808080, 0.5);
         this.scene.add(ambientLight);
         
-        // Point light at the sun's position with increased intensity and range
-        const sunLight = new THREE.PointLight(0xffffff, 5.0, 1000);
+        // Point light at the sun's position with no light falloff to ensure consistent lighting for all planets
+        // Parameters: color, intensity, distance, decay (set to 0 for no falloff)
+        const sunLight = new THREE.PointLight(0xffffff, 2.0, 0, 0);
         sunLight.position.set(0, 0, 0);
         sunLight.castShadow = true;
         this.solarSystemObj.add(sunLight);
