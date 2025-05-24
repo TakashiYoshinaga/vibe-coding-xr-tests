@@ -18,9 +18,15 @@ export class Controls {
         this.orbitControls.screenSpacePanning = false;
         this.orbitControls.minDistance = 10;
         this.orbitControls.maxDistance = 500;
-        // Set target of orbit controls away from center to prevent always facing the sun
         this.orbitControls.target.set(0, 0, 0);
         this.orbitControls.enableRotate = true; // Ensure mouse look-around is enabled
+        
+        // Configure mouse controls to work with left click
+        this.orbitControls.mouseButtons = {
+            LEFT: THREE.MOUSE.ROTATE,
+            MIDDLE: THREE.MOUSE.DOLLY,
+            RIGHT: THREE.MOUSE.PAN
+        };
         
         // Keyboard controls state
         this.keysPressed = {};
@@ -100,13 +106,9 @@ export class Controls {
         }
         if (this.keysPressed['a']) {
             this.camera.position.addScaledVector(this.getRightVector(), -this.moveSpeed);
-            // Update orbit controls target to maintain camera direction when moving left/right
-            this.orbitControls.target.copy(this.camera.position).add(originalDirection);
         }
         if (this.keysPressed['d']) {
             this.camera.position.addScaledVector(this.getRightVector(), this.moveSpeed);
-            // Update orbit controls target to maintain camera direction when moving left/right
-            this.orbitControls.target.copy(this.camera.position).add(originalDirection);
         }
         
         // Q/E for up/down
@@ -116,6 +118,9 @@ export class Controls {
         if (this.keysPressed['e']) {
             this.camera.position.y += this.moveSpeed;
         }
+        
+        // Update orbit controls target to maintain camera's current look direction
+        this.orbitControls.target.copy(this.camera.position).add(originalDirection);
     }
     
     getForwardVector() {
