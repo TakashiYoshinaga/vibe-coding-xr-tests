@@ -154,28 +154,52 @@ export class Controls {
             // Process each controller with joystick
             inputSources.forEach(inputSource => {
                 if (inputSource.gamepad) {
-                    const axes = inputSource.gamepad.axes;
+                    const gamepad = inputSource.gamepad;
+                    const axes = gamepad.axes;
                     
                     // Check if the controller has joystick input (axes data)
                     if (axes && axes.length >= 2) {
-                        // Use Y-axis of the joystick (axes[1]) for scaling
-                        // Y-axis: -1 (forward/up) to 1 (backward/down)
-                        const joystickY = axes[1];
+                        // For Meta Quest controllers:
+                        // Right controller: axes[0] = X, axes[1] = Y (primary joystick)
+                        // Left controller: axes[2] = X, axes[3] = Y (secondary joystick) 
                         
-                        // Define a scaling factor - make it more noticeable
-                        const scaleFactor = 1.02;
+                        let joystickY = 0;
                         
-                        // Apply scaling based on joystick position
-                        // Forward (negative value) = zoom in (enlarge)
-                        // Backward (positive value) = zoom out (shrink)
-                        if (joystickY < -0.1) {
-                            // Joystick pushed forward - zoom in
-                            const newScale = this.solarSystem.scale.x * scaleFactor;
-                            this.solarSystem.scale.set(newScale, newScale, newScale);
-                        } else if (joystickY > 0.1) {
-                            // Joystick pulled backward - zoom out
-                            const newScale = this.solarSystem.scale.x / scaleFactor;
-                            this.solarSystem.scale.set(newScale, newScale, newScale);
+                        // Try different axis configurations based on controller
+                        if (inputSource.handedness === 'right') {
+                            // Right controller - use primary joystick Y-axis
+                            joystickY = axes[1] || 0;
+                        } else if (inputSource.handedness === 'left') {
+                            // Left controller - try both primary and secondary Y-axis
+                            joystickY = axes[1] || axes[3] || 0;
+                        } else {
+                            // Fallback: try first available Y-axis
+                            joystickY = axes[1] || 0;
+                        }
+                        
+                        // Apply deadzone to prevent accidental input
+                        const deadzone = 0.2;
+                        
+                        if (Math.abs(joystickY) > deadzone) {
+                            // Calculate scale change based on joystick position
+                            // Forward (negative value) = zoom in (enlarge)
+                            // Backward (positive value) = zoom out (shrink)
+                            const scaleRate = 0.01; // Slower, more controlled scaling
+                            const scaleChange = -joystickY * scaleRate; // Negative to invert direction
+                            
+                            // Apply scaling
+                            const currentScale = this.solarSystem.scale.x;
+                            const newScale = currentScale * (1 + scaleChange);
+                            
+                            // Clamp to reasonable limits
+                            const minScale = 0.01;
+                            const maxScale = 2.0;
+                            const clampedScale = Math.max(minScale, Math.min(maxScale, newScale));
+                            
+                            this.solarSystem.scale.setScalar(clampedScale);
+                            
+                            // Debug output (remove in production)
+                            console.log(`VR Joystick: Y=${joystickY.toFixed(2)}, Scale=${clampedScale.toFixed(2)}, Hand=${inputSource.handedness}`);
                         }
                     }
                 }
