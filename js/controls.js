@@ -28,6 +28,9 @@ export class Controls {
             RIGHT: THREE.MOUSE.PAN
         };
         
+        // Ensure the DOM element can receive mouse events
+        this.domElement.style.touchAction = 'none';
+        
         // Keyboard controls state
         this.keysPressed = {};
         this.moveSpeed = 0.5;
