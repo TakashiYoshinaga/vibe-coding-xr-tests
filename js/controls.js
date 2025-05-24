@@ -45,12 +45,8 @@ export class Controls {
     setupVR() {
         // Enable WebXR
         this.renderer.xr.enabled = true;
-
-        // Remove existing VR button if present (safety)
-        const oldVRButton = document.getElementById('VRButton');
-        if (oldVRButton) oldVRButton.remove();
-
-        // Add VR button to document (let three.js handle it)
+        
+        // Add VR button to document
         document.body.appendChild(VRButton.createButton(this.renderer));
         
         // Setup VR controllers
@@ -66,7 +62,7 @@ export class Controls {
         
         // XR Mode state management
         this.isARMode = false; // false = VR mode, true = AR mode
-        this.lastTriggerState = [false, false]; // index-based for controllers
+        this.lastTriggerState = { left: false, right: false };
     }
     
     setupVRControllers() {
@@ -86,14 +82,15 @@ export class Controls {
         this.controllerGrip2 = this.renderer.xr.getControllerGrip(1);
         this.controllerGrip2.add(controllerModelFactory.createControllerModel(this.controllerGrip2));
         this.scene.add(this.controllerGrip2);
-
-        // Remove selectstart event listeners (handled in processVRInput)
-        // this.controller1.addEventListener('selectstart', () => {
-        //     this.toggleXRMode();
-        // });
-        // this.controller2.addEventListener('selectstart', () => {
-        //     this.toggleXRMode();
-        // });
+        
+        // Add trigger event listeners for mode switching
+        this.controller1.addEventListener('selectstart', () => {
+            this.toggleXRMode();
+        });
+        
+        this.controller2.addEventListener('selectstart', () => {
+            this.toggleXRMode();
+        });
     }
     
     setupKeyboardControls() {
@@ -167,21 +164,28 @@ export class Controls {
         if (session) {
             const inputSources = Array.from(session.inputSources);
             
-            // Process each controller by index
-            inputSources.forEach((inputSource, idx) => {
+            // Process each controller
+            inputSources.forEach(inputSource => {
                 if (inputSource.gamepad) {
                     const gamepad = inputSource.gamepad;
                     const axes = gamepad.axes;
                     const buttons = gamepad.buttons;
+                    const handedness = inputSource.handedness;
                     
-                    // Trigger button state (Meta Quest: buttons[0])
+                    // Check trigger button state (typically the first button in the array)
                     if (buttons && buttons.length > 0) {
+                        // Get trigger button state (pressed or not)
                         const triggerPressed = buttons[0].pressed;
-                        if (triggerPressed && !this.lastTriggerState[idx]) {
+                        
+                        // Check if the trigger state has changed from not pressed to pressed
+                        if (triggerPressed && !this.lastTriggerState[handedness]) {
+                            // Trigger pressed - toggle VR/AR mode
                             this.toggleXRMode();
-                            console.log(`Trigger pressed on controller ${idx} - Toggling VR/AR mode`);
+                            console.log(`Trigger pressed on ${handedness} controller - Toggling VR/AR mode`);
                         }
-                        this.lastTriggerState[idx] = triggerPressed;
+                        
+                        // Update last trigger state
+                        this.lastTriggerState[handedness] = triggerPressed;
                     }
                     
                     // Check if the controller has joystick input (axes data)
