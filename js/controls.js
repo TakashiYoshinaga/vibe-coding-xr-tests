@@ -46,8 +46,8 @@ export class Controls {
         // Enable WebXR
         this.renderer.xr.enabled = true;
         
-        // Add custom VR button instead of standard VRButton
-        this.addCustomXRButton();
+        // Add VR button to document
+        document.body.appendChild(VRButton.createButton(this.renderer));
         
         // Setup VR controllers
         this.setupVRControllers();
@@ -62,44 +62,6 @@ export class Controls {
         
         // XR Mode state management
         this.isARMode = false; // false = VR mode, true = AR mode
-    }
-    
-    // Meta Quest特有のパススルー用カスタムXRボタン
-    addCustomXRButton() {
-        const button = document.createElement('button');
-        button.id = 'vr-button';
-        button.textContent = 'ENTER VR';
-        
-        button.addEventListener('click', async () => {
-            // 現在のXRセッションを取得
-            const currentSession = this.renderer.xr.getSession();
-            
-            if (currentSession) {
-                // セッション終了
-                await currentSession.end();
-                button.textContent = 'ENTER VR';
-            } else {
-                // VRセッション開始（デフォルトはVRモード）
-                try {
-                    // Meta Quest用のVR設定
-                    const sessionInit = {
-                        optionalFeatures: ['local-floor', 'bounded-floor']
-                    };
-                    const session = await navigator.xr.requestSession('immersive-vr', sessionInit);
-                    
-                    await this.renderer.xr.setSession(session);
-                    button.textContent = 'EXIT VR';
-                    
-                    // AR/VRの状態をリセット
-                    this.isARMode = false;
-                    this.updateSolarSystemForMode();
-                } catch (error) {
-                    console.error('VRセッション開始エラー:', error);
-                }
-            }
-        });
-        
-        document.body.appendChild(button);
     }
     
     setupVRControllers() {
@@ -277,56 +239,42 @@ export class Controls {
         }
     }
     
-    // XRモード切り替え関数 - トリガープレス時に呼ばれる
+    // XRモード切り替え関数
     async toggleXRMode() {
-        // 現在のモードを保存（デバッグ用）
-        const prevMode = this.isARMode ? 'AR' : 'VR';
-        
-        // モード切り替え
         this.isARMode = !this.isARMode;
-        
-        // デバッグ情報を表示
-        console.log(`✅✅✅ XR Mode CHANGING: ${prevMode} -> ${this.isARMode ? 'AR' : 'VR'}`);
-        
+        console.log(`XR Mode switched to: ${this.isARMode ? 'AR' : 'VR'} mode`);
+
+        // XRセッションの切り替え
+        await this.switchXRSession();
+
+        // モードに応じて太陽系の表示設定を変更
+        this.updateSolarSystemForMode();
+
+        // UIの更新
+        this.updateModeDisplay();
+    }
+
+    // XRセッションの切り替え
+    async switchXRSession() {
+        const session = this.renderer.xr.getSession();
+        if (session) {
+            await session.end();
+        }
+
+        // ARモードの場合はimmersive-ar、VRモードの場合はimmersive-vr
+        const mode = this.isARMode ? 'immersive-ar' : 'immersive-vr';
+
+        // ARモードの場合はパススルーを有効にする
+        const sessionInit = this.isARMode
+            ? { requiredFeatures: ['local', 'camera-access', 'dom-overlay'], domOverlay: { root: document.body } }
+            : { optionalFeatures: ['local-floor', 'bounded-floor'] };
+
+        // WebXRセッション開始
         try {
-            // 現在のセッションを終了
-            const currentSession = this.renderer.xr.getSession();
-            if (currentSession) {
-                console.log(`Ending current ${prevMode} session...`);
-                await currentSession.end();
-                
-                // セッションが確実に終了するのを待つ（重要）
-                await new Promise(resolve => setTimeout(resolve, 500));
-            }
-            
-            // 必要なセッションタイプとオプション
-            const sessionType = this.isARMode ? 'immersive-ar' : 'immersive-vr';
-            
-            // Meta Quest用のパススルー設定
-            const sessionInit = this.isARMode ? 
-                {
-                    requiredFeatures: ['local', 'camera-access'],
-                    optionalFeatures: ['dom-overlay', 'hand-tracking'],
-                    domOverlay: { root: document.body }
-                } : 
-                { optionalFeatures: ['local-floor', 'bounded-floor'] };
-            
-            console.log(`Requesting new ${this.isARMode ? 'AR' : 'VR'} session with options:`, sessionInit);
-            
-            // 新しいセッション開始
-            const session = await navigator.xr.requestSession(sessionType, sessionInit);
-            await this.renderer.xr.setSession(session);
-            
-            console.log(`✅ Successfully started ${this.isARMode ? 'AR' : 'VR'} session`);
-            
-            // モードに応じた表示設定
-            this.updateSolarSystemForMode();
-            this.updateModeDisplay();
-        } catch (error) {
-            console.error(`❌ Failed to switch to ${this.isARMode ? 'AR' : 'VR'} mode:`, error);
-            // エラーが発生した場合は元のモードに戻す
-            this.isARMode = !this.isARMode;
-            alert(`パススルーモードへの切り替えに失敗しました: ${error.message}`);
+            const newSession = await navigator.xr.requestSession(mode, sessionInit);
+            this.renderer.xr.setSession(newSession);
+        } catch (e) {
+            console.warn(`Failed to start XR session (${mode}):`, e);
         }
     }
     
@@ -334,14 +282,12 @@ export class Controls {
     updateSolarSystemForMode() {
         if (this.isARMode) {
             // ARモード: 小さくして手の前に配置
-            this.solarSystem.scale.set(0.02, 0.02, 0.02); // さらに小さく
-            this.solarSystem.position.set(0, -0.15, -0.5); // より手前に配置
-            console.log('Solar system configured for AR mode');
+            this.solarSystem.scale.set(0.05, 0.05, 0.05);
+            this.solarSystem.position.set(0, -0.2, -0.8); // より近く、少し下に
         } else {
             // VRモード: 中程度のサイズで目の前に配置
             this.solarSystem.scale.set(0.1, 0.1, 0.1);
             this.solarSystem.position.set(0, -0.5, -2); // 2メートル前、少し下に
-            console.log('Solar system configured for VR mode');
         }
     }
     
@@ -353,8 +299,7 @@ export class Controls {
     }
 
     // Handler for VR session start
-    onVRSessionStart(event) {
-        console.log('XR Session started:', event);
+    onVRSessionStart() {
         // Store original scale and position for restoration when exiting VR
         this.originalScale.copy(this.solarSystem.scale);
         this.originalPosition.copy(this.solarSystem.position);
@@ -364,8 +309,7 @@ export class Controls {
     }
     
     // Handler for VR session end
-    onVRSessionEnd(event) {
-        console.log('XR Session ended:', event);
+    onVRSessionEnd() {
         // Restore original scale and position
         this.solarSystem.scale.copy(this.originalScale);
         this.solarSystem.position.copy(this.originalPosition);
