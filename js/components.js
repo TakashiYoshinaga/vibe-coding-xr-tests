@@ -3,6 +3,45 @@
  * This file contains custom components for the Solar System Viewer
  */
 
+// Component for creating orbital lines
+AFRAME.registerComponent('orbit-line', {
+    schema: {
+        radius: { type: 'number', default: 1 },
+        segments: { type: 'number', default: 64 },
+        color: { type: 'color', default: '#FFFFFF' },
+        opacity: { type: 'number', default: 1.0 }
+    },
+    
+    init: function() {
+        const material = new THREE.LineBasicMaterial({ 
+            color: this.data.color,
+            transparent: true,
+            opacity: this.data.opacity
+        });
+        
+        // Create circle geometry in the XZ plane
+        const geometry = new THREE.BufferGeometry();
+        const vertices = [];
+        
+        for (let i = 0; i <= this.data.segments; i++) {
+            const theta = (i / this.data.segments) * Math.PI * 2;
+            const x = this.data.radius * Math.cos(theta);
+            const z = this.data.radius * Math.sin(theta);
+            vertices.push(x, 0, z);
+        }
+        
+        geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+        
+        // Create the line
+        const line = new THREE.Line(geometry, material);
+        this.el.setObject3D('line', line);
+    },
+    
+    remove: function() {
+        this.el.removeObject3D('line');
+    }
+});
+
 // Component for planet rotation and revolution
 AFRAME.registerComponent('planet-motion', {
     schema: {
