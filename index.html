@@ -60,7 +60,30 @@
                 
                 scene.addEventListener('exit-vr', () => {
                     statusDiv.textContent = 'XR Status: Exited XR mode';
+                    // Additional cleanup when exiting XR in debug mode
+                    setTimeout(() => {
+                        // Ensure scene is properly reset
+                        scene.setAttribute('stats', 'true'); // Keep stats in debug mode
+                    }, 100);
                 });
+            } else {
+                // Ensure stats are disabled in normal mode
+                const scene = document.querySelector('a-scene');
+                if (scene) {
+                    scene.setAttribute('stats', 'false');
+                    
+                    // Add exit-vr listener to clean up any remaining stats
+                    scene.addEventListener('exit-vr', () => {
+                        setTimeout(() => {
+                            scene.setAttribute('stats', 'false');
+                            // Remove any debug elements that might have been created
+                            const debugElement = document.getElementById('debug-info');
+                            if (debugElement) {
+                                debugElement.remove();
+                            }
+                        }, 100);
+                    });
+                }
             }
             
             // AR mode forcing

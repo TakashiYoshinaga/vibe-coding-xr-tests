@@ -89,6 +89,8 @@ AFRAME.registerComponent('vr-zoom', {
         
         this.scene.addEventListener('exit-vr', () => {
             this.isVR = false;
+            // Reset scene scale when exiting VR
+            this.scene.object3D.scale.set(1, 1, 1);
         });
         
         // For Oculus/Meta Quest controllers
@@ -282,6 +284,9 @@ AFRAME.registerComponent('ar-scale-adjuster', {
         if (urlParams.get('debug') === 'true') {
             console.log('🔧 Debug mode enabled');
             this.sceneEl.setAttribute('stats', 'true');
+        } else {
+            // Ensure stats are disabled in normal mode
+            this.sceneEl.setAttribute('stats', 'false');
         }
     },
 
@@ -299,6 +304,17 @@ AFRAME.registerComponent('ar-scale-adjuster', {
         
         // Clean up classes
         document.body.classList.remove('ar-mode', 'vr-mode', 'url-forced-ar');
+        
+        // Ensure scene is visible and properly reset
+        const scene = this.sceneEl;
+        if (scene && scene.object3D) {
+            scene.object3D.visible = true;
+            // Reset scene scale if it was modified
+            scene.object3D.scale.set(1, 1, 1);
+        }
+        
+        // Disable stats if they were enabled
+        scene.setAttribute('stats', 'false');
     },
     
     applyScale: function(scale) {
