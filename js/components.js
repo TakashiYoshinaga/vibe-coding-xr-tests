@@ -283,10 +283,6 @@ AFRAME.registerComponent('ar-scale-adjuster', {
         
         if (urlParams.get('debug') === 'true') {
             console.log('🔧 Debug mode enabled');
-            this.sceneEl.setAttribute('stats', 'true');
-        } else {
-            // Ensure stats are disabled in normal mode
-            this.sceneEl.setAttribute('stats', 'false');
         }
     },
 
@@ -312,9 +308,6 @@ AFRAME.registerComponent('ar-scale-adjuster', {
             // Reset scene scale if it was modified
             scene.object3D.scale.set(1, 1, 1);
         }
-        
-        // Disable stats if they were enabled
-        scene.setAttribute('stats', 'false');
     },
     
     applyScale: function(scale) {
