@@ -130,11 +130,13 @@ AFRAME.registerComponent('vr-zoom', {
     }
 });
 
-// Component for adjusting solar system scale in AR mode
+// Component for adjusting solar system scale and position in AR mode
 AFRAME.registerComponent('ar-scale-adjuster', {
     schema: {
         arScale: { type: 'number', default: 0.5 },  // Scale in AR mode (half size)
-        vrScale: { type: 'number', default: 1.0 }   // Scale in VR/normal mode
+        vrScale: { type: 'number', default: 1.0 },   // Scale in VR/normal mode
+        arYOffset: { type: 'number', default: 1.0 }, // Y position offset in AR mode (1m higher)
+        vrYOffset: { type: 'number', default: 0.0 }  // Y position offset in VR/normal mode
     },
     
     init: function() {
@@ -142,6 +144,7 @@ AFRAME.registerComponent('ar-scale-adjuster', {
         this.sceneEl = this.el.sceneEl;
         this.currentScale = this.data.vrScale;
         this.checkDelayTimer = null;
+        this.originalPosition = this.el.getAttribute('position'); // Store original position
 
         // Bind methods
         this.onEnterXR = this.onEnterXR.bind(this);
@@ -152,8 +155,8 @@ AFRAME.registerComponent('ar-scale-adjuster', {
         this.sceneEl.addEventListener('enter-vr', this.onEnterXR);
         this.sceneEl.addEventListener('exit-vr', this.onExitXR);
 
-        // Initial scale
-        this.applyScale(this.data.vrScale);
+        // Initial scale and position
+        this.applyTransform(this.data.vrScale, this.data.vrYOffset);
 
         // Debug info
         console.log('AR Scale Adjuster initialized');
@@ -190,25 +193,25 @@ AFRAME.registerComponent('ar-scale-adjuster', {
                 if (isAR) {
                     // ARモード
                     this.currentScale = this.data.arScale;
-                    console.log('🟢 AR MODE DETECTED - Scaling to:', this.data.arScale);
+                    console.log('🟢 AR MODE DETECTED - Scaling to:', this.data.arScale, 'Y offset:', this.data.arYOffset);
                     document.body.classList.add('ar-mode');
                     document.body.classList.remove('vr-mode');
+                    this.applyTransform(this.currentScale, this.data.arYOffset);
                 } else {
                     // VRモード
                     this.currentScale = this.data.vrScale;
-                    console.log('🔵 VR MODE DETECTED - Scaling to:', this.data.vrScale);
+                    console.log('🔵 VR MODE DETECTED - Scaling to:', this.data.vrScale, 'Y offset:', this.data.vrYOffset);
                     document.body.classList.add('vr-mode');
                     document.body.classList.remove('ar-mode');
+                    this.applyTransform(this.currentScale, this.data.vrYOffset);
                 }
-                
-                this.applyScale(this.currentScale);
             } else {
                 console.log('⚠️ No XR session found, defaulting to VR scale');
-                this.applyScale(this.data.vrScale);
+                this.applyTransform(this.data.vrScale, this.data.vrYOffset);
             }
         } else {
             console.log('⚠️ XR Manager not presenting, defaulting to VR scale');
-            this.applyScale(this.data.vrScale);
+            this.applyTransform(this.data.vrScale, this.data.vrYOffset);
         }
     },
     
@@ -276,7 +279,7 @@ AFRAME.registerComponent('ar-scale-adjuster', {
         if (urlParams.get('ar') === 'true' || urlParams.get('passthrough') === 'true') {
             console.log('🔧 AR mode forced via URL parameters');
             this.currentScale = this.data.arScale;
-            this.applyScale(this.currentScale);
+            this.applyTransform(this.currentScale, this.data.arYOffset);
             document.body.classList.add('ar-mode');
             document.body.classList.add('url-forced-ar');
         }
@@ -295,8 +298,8 @@ AFRAME.registerComponent('ar-scale-adjuster', {
         
         // Reset to default when exiting XR
         this.currentScale = this.data.vrScale;
-        this.applyScale(this.currentScale);
-        console.log('🚪 Exited XR - resetting scale to:', this.data.vrScale);
+        this.applyTransform(this.currentScale, this.data.vrYOffset);
+        console.log('🚪 Exited XR - resetting scale to:', this.data.vrScale, 'Y offset to:', this.data.vrYOffset);
         
         // Clean up classes
         document.body.classList.remove('ar-mode', 'vr-mode', 'url-forced-ar');
@@ -310,9 +313,20 @@ AFRAME.registerComponent('ar-scale-adjuster', {
         }
     },
     
-    applyScale: function(scale) {
+    applyTransform: function(scale, yOffset) {
+        // Apply scale
         this.el.setAttribute('scale', scale + ' ' + scale + ' ' + scale);
-        console.log('📏 Applied scale:', scale, 'to element:', this.el.id || this.el.tagName);
+        
+        // Apply position with Y offset
+        const newPosition = {
+            x: this.originalPosition.x,
+            y: this.originalPosition.y + yOffset,
+            z: this.originalPosition.z
+        };
+        this.el.setAttribute('position', newPosition);
+        
+        console.log('📏 Applied transform - Scale:', scale, 'Y offset:', yOffset, 'to element:', this.el.id || this.el.tagName);
+        console.log('📍 New position:', newPosition);
     },
     
     remove: function() {
