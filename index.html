@@ -8,11 +8,15 @@
 </head>
 <body>
     <a-scene xr-mode-ui="XRMode:xr"
-             background="color: #222222"
-             antialias="true">
+             background="color: #777777"
+             antialias="true"
+             stats="false"
+             debug="false"
+             ui-wrapper="false"
+        >
                   
         <!-- Solar System Container - AR/VRで太陽系が手前に表示されるように -->
-        <a-entity id="solar-system" position="0 0 -5">
+        <a-entity id="solar-system" position="0 0 -5" ar-scale-adjuster="arScale: 0.5; vrScale: 1.0">
             <!-- Sun -->
             <a-sphere position="0 0 0" radius="1" color="#FF5500" material="emissive: #FF5500; emissiveIntensity: 0.7">
                 <a-light type="point" intensity="1.5"></a-light>

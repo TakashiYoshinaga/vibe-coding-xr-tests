@@ -128,6 +128,44 @@ AFRAME.registerComponent('vr-zoom', {
     }
 });
 
+// Component for adjusting solar system scale in AR mode
+AFRAME.registerComponent('ar-scale-adjuster', {
+    schema: {
+        arScale: { type: 'number', default: 0.5 },  // Scale in AR mode (half size)
+        vrScale: { type: 'number', default: 1.0 }   // Scale in VR/normal mode
+    },
+    
+    init: function() {
+        this.el.sceneEl.addEventListener('enter-vr', this.checkMode.bind(this));
+        this.el.sceneEl.addEventListener('exit-vr', this.resetScale.bind(this));
+        
+        // Check initial state
+        this.checkMode();
+    },
+    
+    checkMode: function() {
+        if (this.el.sceneEl.is('ar-mode')) {
+            // If in AR mode, apply AR scale
+            this.applyScale(this.data.arScale);
+            console.log('AR mode detected - scaling to: ' + this.data.arScale);
+        } else if (this.el.sceneEl.is('vr-mode')) {
+            // If in VR mode, apply VR scale
+            this.applyScale(this.data.vrScale);
+            console.log('VR mode detected - scaling to: ' + this.data.vrScale);
+        }
+    },
+    
+    resetScale: function() {
+        // Reset to default scale
+        this.applyScale(this.data.vrScale);
+        console.log('Exited XR - resetting scale to: ' + this.data.vrScale);
+    },
+    
+    applyScale: function(scale) {
+        this.el.setAttribute('scale', scale + ' ' + scale + ' ' + scale);
+    }
+});
+
 // Component for creating background stars
 AFRAME.registerComponent('stars', {
     schema: {
