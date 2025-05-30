@@ -144,7 +144,11 @@ AFRAME.registerComponent('ar-scale-adjuster', {
         this.sceneEl = this.el.sceneEl;
         this.currentScale = this.data.vrScale;
         this.checkDelayTimer = null;
-        this.originalPosition = this.el.getAttribute('position'); // Store original position
+        
+        // Store original position from the element's current position attribute
+        this.originalPosition = this.el.getAttribute('position');
+        console.log('🏁 AR Scale Adjuster initialized with original position:', this.originalPosition);
+        console.log('🏁 Schema values - arYOffset:', this.data.arYOffset, 'vrYOffset:', this.data.vrYOffset);
 
         // Bind methods
         this.onEnterXR = this.onEnterXR.bind(this);
@@ -158,9 +162,6 @@ AFRAME.registerComponent('ar-scale-adjuster', {
         // Initial scale and position
         this.applyTransform(this.data.vrScale, this.data.vrYOffset);
 
-        // Debug info
-        console.log('AR Scale Adjuster initialized');
-        
         // URL parameter forcing for testing
         this.checkURLParameters();
     },
@@ -314,6 +315,9 @@ AFRAME.registerComponent('ar-scale-adjuster', {
     },
     
     applyTransform: function(scale, yOffset) {
+        console.log('🔧 applyTransform called with:', { scale, yOffset });
+        console.log('🔧 originalPosition:', this.originalPosition);
+        
         // Apply scale
         this.el.setAttribute('scale', scale + ' ' + scale + ' ' + scale);
         
@@ -323,10 +327,15 @@ AFRAME.registerComponent('ar-scale-adjuster', {
             y: this.originalPosition.y + yOffset,
             z: this.originalPosition.z
         };
+        
+        console.log('🔧 Calculated newPosition:', newPosition);
         this.el.setAttribute('position', newPosition);
         
+        // Verify the position was actually set
+        const verifyPosition = this.el.getAttribute('position');
+        console.log('🔧 Verified position after setting:', verifyPosition);
+        
         console.log('📏 Applied transform - Scale:', scale, 'Y offset:', yOffset, 'to element:', this.el.id || this.el.tagName);
-        console.log('📍 New position:', newPosition);
     },
     
     remove: function() {
