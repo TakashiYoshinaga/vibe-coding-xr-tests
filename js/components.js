@@ -197,7 +197,7 @@ AFRAME.registerComponent('ar-scale-adjuster', {
                     console.log('🟢 AR MODE DETECTED - Scaling to:', this.data.arScale, 'Y offset:', this.data.arYOffset);
                     document.body.classList.add('ar-mode');
                     document.body.classList.remove('vr-mode');
-                    this.applyTransform(this.currentScale, this.data.arYOffset);
+                    this.applyTransform(this.currentScale, 100);
                 } else {
                     // VRモード
                     this.currentScale = this.data.vrScale;
