@@ -1,53 +1,82 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Solar System Viewer - WebXR</title>
-    <link rel="stylesheet" href="styles.css">
-    <!-- Import three.js from CDN -->
-    <script type="importmap">
-        {
-            "imports": {
-                "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
-                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
-            }
-        }
-    </script>
-    <script type="module" src="js/main.js"></script>
+    <title>Solar System Viewer</title>
+    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+    <script src="js/components.js"></script>
 </head>
 <body>
-    <div id="container">
-        <div id="info">
-            <h1>Solar System Viewer 3</h1>
-            <div id="controls-info">
-                <h2>Controls:</h2>
-                <h3>Desktop:</h3>
-                <p>WASD - Move forward/backward/left/right</p>
-                <p>Q/E - Move up/down</p>
-                <p>Mouse - Look around</p>
-                <h3>VR (Meta Quest):</h3>
-                <p>Left Joystick Forward - Zoom in</p>
-                <p>Left Joystick Backward - Zoom out</p>
-            </div>
-        </div>
-        <button id="help-toggle" aria-label="Toggle help">?</button>
-    </div>
-    
-    <script>
-        // Add functionality to toggle help panel visibility
-        document.addEventListener('DOMContentLoaded', () => {
-            const helpToggle = document.getElementById('help-toggle');
-            const infoPanel = document.getElementById('info');
-            
-            helpToggle.addEventListener('click', () => {
-                if (infoPanel.style.display === 'none') {
-                    infoPanel.style.display = 'block';
-                } else {
-                    infoPanel.style.display = 'none';
-                }
-            });
-        });
-    </script>
+    <a-scene vr-mode-ui="enterVRButton: Enter VR; exitVRButton: Exit VR"
+             background="color: #000000"
+             antialias="true">
+        <!-- Sun -->
+        <a-sphere position="0 0 0" radius="1" color="#FF5500" material="emissive: #FF5500; emissiveIntensity: 0.7">
+            <a-light type="point" intensity="1.5"></a-light>
+        </a-sphere>
+
+        <!-- Orbit Rings -->
+        <a-entity position="0 0 0">
+            <!-- Mercury Orbit (2) -->
+            <a-ring position="0 0 0" rotation="90 0 0" radius="2" radius-tubular="0.02" color="#FFFFFF" opacity="0.2" theta-length="360"></a-ring>
+            <!-- Venus Orbit (3) -->
+            <a-ring position="0 0 0" rotation="90 0 0" radius="3" radius-tubular="0.02" color="#FFFFFF" opacity="0.2" theta-length="360"></a-ring>
+            <!-- Earth Orbit (4) -->
+            <a-ring position="0 0 0" rotation="90 0 0" radius="4" radius-tubular="0.02" color="#FFFFFF" opacity="0.2" theta-length="360"></a-ring>
+            <!-- Mars Orbit (5) -->
+            <a-ring position="0 0 0" rotation="90 0 0" radius="5" radius-tubular="0.02" color="#FFFFFF" opacity="0.2" theta-length="360"></a-ring>
+            <!-- Jupiter Orbit (6) -->
+            <a-ring position="0 0 0" rotation="90 0 0" radius="6" radius-tubular="0.02" color="#FFFFFF" opacity="0.2" theta-length="360"></a-ring>
+            <!-- Saturn Orbit (7) -->
+            <a-ring position="0 0 0" rotation="90 0 0" radius="7" radius-tubular="0.02" color="#FFFFFF" opacity="0.2" theta-length="360"></a-ring>
+            <!-- Uranus Orbit (8) -->
+            <a-ring position="0 0 0" rotation="90 0 0" radius="8" radius-tubular="0.02" color="#FFFFFF" opacity="0.2" theta-length="360"></a-ring>
+            <!-- Neptune Orbit (9) -->
+            <a-ring position="0 0 0" rotation="90 0 0" radius="9" radius-tubular="0.02" color="#FFFFFF" opacity="0.2" theta-length="360"></a-ring>
+        </a-entity>
+
+        <!-- Planets -->
+        <!-- Mercury -->
+        <a-sphere position="2 0 0" radius="0.2" color="#8B4513"
+                  planet-motion="rotationSpeed: 0.1; revolutionSpeed: 0.014; orbitRadius: 2"></a-sphere>
+        <!-- Venus -->
+        <a-sphere position="3 0 0" radius="0.25" color="#E3A857"
+                  planet-motion="rotationSpeed: 0.08; revolutionSpeed: 0.005; orbitRadius: 3"></a-sphere>
+        <!-- Earth -->
+        <a-sphere position="4 0 0" radius="0.3" color="#1F4788"
+                  planet-motion="rotationSpeed: 0.1; revolutionSpeed: 0.003; orbitRadius: 4"></a-sphere>
+        <!-- Mars -->
+        <a-sphere position="5 0 0" radius="0.25" color="#B22222"
+                  planet-motion="rotationSpeed: 0.095; revolutionSpeed: 0.0016; orbitRadius: 5"></a-sphere>
+        <!-- Jupiter -->
+        <a-sphere position="6 0 0" radius="0.6" color="#CD853F"
+                  planet-motion="rotationSpeed: 0.2; revolutionSpeed: 0.00025; orbitRadius: 6"></a-sphere>
+        <!-- Saturn -->
+        <a-entity position="7 0 0" planet-motion="rotationSpeed: 0.15; revolutionSpeed: 0.0001; orbitRadius: 7">
+            <a-sphere radius="0.5" color="#DAA520"></a-sphere>
+            <a-ring radius-inner="0.6" radius-outer="0.8" color="#A0522D" rotation="75 0 0"></a-ring>
+        </a-entity>
+        <!-- Uranus -->
+        <a-sphere position="8 0 0" radius="0.4" color="#6495ED"
+                  planet-motion="rotationSpeed: 0.1; revolutionSpeed: 0.000036; orbitRadius: 8"></a-sphere>
+        <!-- Neptune -->
+        <a-sphere position="9 0 0" radius="0.4" color="#0000FF"
+                  planet-motion="rotationSpeed: 0.1; revolutionSpeed: 0.000018; orbitRadius: 9"></a-sphere>
+
+        <!-- Camera -->
+        <a-entity id="rig" position="0 2 -15">
+            <a-camera look-controls="enabled: true"
+                     wasd-controls="enabled: true">
+                <a-entity id="zoom-controller" vr-zoom=""></a-entity>
+            </a-camera>
+        </a-entity>
+
+        <!-- Lighting -->
+        <a-light type="ambient" color="#333333"></a-light>
+        <a-light type="directional" position="0 5 0" color="#FFFFFF" intensity="0.3"></a-light>
+        
+        <!-- Stars background -->
+        <a-entity stars="count: 1000; radius: 100"></a-entity>
+    </a-scene>
 </body>
 </html>
