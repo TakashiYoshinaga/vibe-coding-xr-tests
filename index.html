@@ -7,9 +7,9 @@
     <script src="js/components.js"></script>
 </head>
 <body>
-    <a-scene vr-mode-ui="enterVRButton: Enter VR; exitVRButton: Exit VR"
+    <a-scene vr-mode-ui="enabled: false"
              ar-mode-ui="enabled: true"
-             webxr="optionalFeatures: hit-test, local-floor, bounded-floor, hand-tracking, layers"
+             webxr="optionalFeatures: hit-test, local-floor, bounded-floor, hand-tracking, layers; requiredFeatures: hit-test"
              background="color: #000000"
              antialias="true">
         <!-- Sun -->
