@@ -136,29 +136,74 @@ AFRAME.registerComponent('ar-scale-adjuster', {
     },
     
     init: function() {
-        this.el.sceneEl.addEventListener('enter-vr', this.checkMode.bind(this));
-        this.el.sceneEl.addEventListener('exit-vr', this.resetScale.bind(this));
-        
-        // Check initial state
-        this.checkMode();
+        // Store references
+        this.sceneEl = this.el.sceneEl;
+        this.currentScale = this.data.vrScale;
+
+        // Register event listeners
+        this.sceneEl.addEventListener('enter-vr', this.onEnterXR.bind(this));
+        this.sceneEl.addEventListener('exit-vr', this.onExitXR.bind(this));
+
+        // Initial scale
+        this.applyScale(this.data.vrScale);
+
+        // Debug info
+        console.log('AR Scale Adjuster initialized');
     },
-    
-    checkMode: function() {
-        if (this.el.sceneEl.is('ar-mode')) {
-            // If in AR mode, apply AR scale
-            this.applyScale(this.data.arScale);
-            console.log('AR mode detected - scaling to: ' + this.data.arScale);
-        } else if (this.el.sceneEl.is('vr-mode')) {
-            // If in VR mode, apply VR scale
-            this.applyScale(this.data.vrScale);
-            console.log('VR mode detected - scaling to: ' + this.data.vrScale);
+
+    onEnterXR: function() {
+        console.log('XR mode entered');
+        
+        // 最も信頼性の高いAR/VR検出方法
+        const xrSession = this.sceneEl.xrSession;
+        
+        if (xrSession) {
+            // environmentBlendModeはARセッションを識別する最も信頼性の高い方法
+            console.log('XR Session found: ', xrSession);
+            console.log('Environment Blend Mode: ', xrSession.environmentBlendMode);
+            
+            // ARモードの検出条件
+            const isAR = (
+                // Meta Quest PassthroughやARCore/ARKitなどはこれらのモードを使用
+                xrSession.environmentBlendMode === 'additive' || 
+                xrSession.environmentBlendMode === 'alpha-blend' ||
+                xrSession.environmentBlendMode === 'screen' ||
+                // 一部のデバイスではセッション情報からARを確認
+                (xrSession.domOverlayState && xrSession.domOverlayState.type) ||
+                // Oculusブラウザ用の追加チェック
+                (navigator.userAgent.includes('Quest') && this.isOculusInPassthrough())
+            );
+            
+            if (isAR) {
+                // ARモード
+                this.currentScale = this.data.arScale;
+                console.log('AR MODE DETECTED - Scaling to:', this.data.arScale);
+                document.body.classList.add('ar-mode');
+                document.body.classList.remove('vr-mode');
+            } else {
+                // VRモード
+                this.currentScale = this.data.vrScale;
+                console.log('VR MODE DETECTED - Scaling to:', this.data.vrScale);
+                document.body.classList.add('vr-mode');
+                document.body.classList.remove('ar-mode');
+            }
+            
+            this.applyScale(this.currentScale);
         }
     },
     
-    resetScale: function() {
-        // Reset to default scale
-        this.applyScale(this.data.vrScale);
-        console.log('Exited XR - resetting scale to: ' + this.data.vrScale);
+    // Oculusがパススルーモードかどうかを確認する補助メソッド
+    isOculusInPassthrough: function() {
+        // OculusブラウザのパススルーモードをURLパラメータで確認
+        return window.location.search.includes('passthroughMode=true') || 
+               window.location.search.includes('ar=true');
+    },
+
+    onExitXR: function() {
+        // Reset to default when exiting XR
+        this.currentScale = this.data.vrScale;
+        this.applyScale(this.currentScale);
+        console.log('Exited XR - resetting scale to:', this.data.vrScale);
     },
     
     applyScale: function(scale) {
