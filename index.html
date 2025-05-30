@@ -8,29 +8,6 @@
     
     <!-- Styling for debug and test elements -->
     <style>
-        .test-controls {
-            position: fixed;
-            bottom: 20px;
-            left: 20px;
-            z-index: 1000;
-            display: flex;
-            gap: 10px;
-        }
-        
-        .test-btn {
-            padding: 10px 15px;
-            background: rgba(0, 123, 255, 0.9);
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 14px;
-        }
-        
-        .test-btn:hover {
-            background: rgba(0, 123, 255, 1);
-        }
-        
         .ar-mode #solar-system {
             transform: scale(0.5);
             transition: transform 0.3s ease;
@@ -174,12 +151,5 @@
         <!-- Stars background -->
         <a-entity stars="count: 1000; radius: 100"></a-entity>
     </a-scene>
-    
-    <!-- Test controls for AR/VR mode testing -->
-    <div class="test-controls">
-        <button class="test-btn" onclick="window.location.href='?ar=true&debug=true'">Test AR Mode</button>
-        <button class="test-btn" onclick="window.location.href='?debug=true'">Test VR Mode</button>
-        <button class="test-btn" onclick="window.location.href='index.html'">Normal Mode</button>
-    </div>
 </body>
 </html>
