@@ -3,8 +3,96 @@
 <head>
     <meta charset="UTF-8">
     <title>Solar System Viewer</title>
-    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+    <script src="https://aframe.io/releases/1.7.0/aframe.min.js"></script>
     <script src="js/components.js"></script>
+    
+    <!-- Styling for debug and test elements -->
+    <style>
+        .test-controls {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            z-index: 1000;
+            display: flex;
+            gap: 10px;
+        }
+        
+        .test-btn {
+            padding: 10px 15px;
+            background: rgba(0, 123, 255, 0.9);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .test-btn:hover {
+            background: rgba(0, 123, 255, 1);
+        }
+        
+        .ar-mode #solar-system {
+            transform: scale(0.5);
+            transition: transform 0.3s ease;
+        }
+        
+        .forced-ar-mode #solar-system {
+            transform: scale(0.5);
+        }
+        
+        #debug-info {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+    </style>
+    
+    <!-- Debug script for AR/VR testing -->
+    <script>
+        // Debug utilities for AR/VR mode testing
+        window.addEventListener('load', function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            
+            // Debug mode
+            if (urlParams.get('debug') === 'true') {
+                console.log('🔧 Debug mode enabled');
+                
+                // Add debug info to the page
+                const debugInfo = document.createElement('div');
+                debugInfo.id = 'debug-info';
+                debugInfo.style.cssText = `
+                    position: fixed; top: 10px; left: 10px; z-index: 1000;
+                    background: rgba(0,0,0,0.8); color: white; padding: 10px;
+                    font-family: monospace; font-size: 12px; border-radius: 5px;
+                    max-width: 300px;
+                `;
+                debugInfo.innerHTML = `
+                    <div>Debug Mode Active</div>
+                    <div>User Agent: ${navigator.userAgent.includes('Quest') ? 'Meta Quest' : 'Other'}</div>
+                    <div>URL Params: ${window.location.search || 'None'}</div>
+                    <div id="xr-status">XR Status: Not entered</div>
+                `;
+                document.body.appendChild(debugInfo);
+                
+                // Update XR status
+                const scene = document.querySelector('a-scene');
+                const statusDiv = document.getElementById('xr-status');
+                
+                scene.addEventListener('enter-vr', () => {
+                    statusDiv.textContent = 'XR Status: Entered XR mode';
+                });
+                
+                scene.addEventListener('exit-vr', () => {
+                    statusDiv.textContent = 'XR Status: Exited XR mode';
+                });
+            }
+            
+            // AR mode forcing
+            if (urlParams.get('ar') === 'true') {
+                console.log('🔧 AR mode forced via URL parameter');
+                document.body.classList.add('forced-ar-mode');
+            }
+        });
+    </script>
 </head>
 <body>
     <a-scene xr-mode-ui="XRMode:xr"
@@ -86,5 +174,12 @@
         <!-- Stars background -->
         <a-entity stars="count: 1000; radius: 100"></a-entity>
     </a-scene>
+    
+    <!-- Test controls for AR/VR mode testing -->
+    <div class="test-controls">
+        <button class="test-btn" onclick="window.location.href='?ar=true&debug=true'">Test AR Mode</button>
+        <button class="test-btn" onclick="window.location.href='?debug=true'">Test VR Mode</button>
+        <button class="test-btn" onclick="window.location.href='index.html'">Normal Mode</button>
+    </div>
 </body>
 </html>

@@ -139,75 +139,181 @@ AFRAME.registerComponent('ar-scale-adjuster', {
         // Store references
         this.sceneEl = this.el.sceneEl;
         this.currentScale = this.data.vrScale;
+        this.checkDelayTimer = null;
+
+        // Bind methods
+        this.onEnterXR = this.onEnterXR.bind(this);
+        this.onExitXR = this.onExitXR.bind(this);
+        this.checkXRMode = this.checkXRMode.bind(this);
 
         // Register event listeners
-        this.sceneEl.addEventListener('enter-vr', this.onEnterXR.bind(this));
-        this.sceneEl.addEventListener('exit-vr', this.onExitXR.bind(this));
+        this.sceneEl.addEventListener('enter-vr', this.onEnterXR);
+        this.sceneEl.addEventListener('exit-vr', this.onExitXR);
 
         // Initial scale
         this.applyScale(this.data.vrScale);
 
         // Debug info
         console.log('AR Scale Adjuster initialized');
+        
+        // URL parameter forcing for testing
+        this.checkURLParameters();
     },
 
     onEnterXR: function() {
-        console.log('XR mode entered');
+        console.log('XR mode entered - checking mode...');
         
-        // 最も信頼性の高いAR/VR検出方法
-        const xrSession = this.sceneEl.xrSession;
+        // A-Frame 1.7でのXRセッションアクセス方法
+        // 少し遅延させてXRセッションが完全に初期化されるまで待つ
+        this.checkDelayTimer = setTimeout(this.checkXRMode, 500);
+    },
+    
+    checkXRMode: function() {
+        // A-Frame 1.7での正しいXRセッションアクセス方法
+        const renderer = this.sceneEl.renderer;
+        const xrManager = renderer.xr;
         
-        if (xrSession) {
-            // environmentBlendModeはARセッションを識別する最も信頼性の高い方法
-            console.log('XR Session found: ', xrSession);
-            console.log('Environment Blend Mode: ', xrSession.environmentBlendMode);
+        if (xrManager && xrManager.isPresenting) {
+            const session = xrManager.getSession();
             
-            // ARモードの検出条件
-            const isAR = (
-                // Meta Quest PassthroughやARCore/ARKitなどはこれらのモードを使用
-                xrSession.environmentBlendMode === 'additive' || 
-                xrSession.environmentBlendMode === 'alpha-blend' ||
-                xrSession.environmentBlendMode === 'screen' ||
-                // 一部のデバイスではセッション情報からARを確認
-                (xrSession.domOverlayState && xrSession.domOverlayState.type) ||
-                // Oculusブラウザ用の追加チェック
-                (navigator.userAgent.includes('Quest') && this.isOculusInPassthrough())
-            );
-            
-            if (isAR) {
-                // ARモード
-                this.currentScale = this.data.arScale;
-                console.log('AR MODE DETECTED - Scaling to:', this.data.arScale);
-                document.body.classList.add('ar-mode');
-                document.body.classList.remove('vr-mode');
+            if (session) {
+                console.log('XR Session found');
+                console.log('Session mode:', session.mode);
+                console.log('Environment Blend Mode:', session.environmentBlendMode);
+                console.log('Session enabled features:', session.enabledFeatures);
+                
+                // ARモードの検出
+                const isAR = this.detectARMode(session);
+                
+                if (isAR) {
+                    // ARモード
+                    this.currentScale = this.data.arScale;
+                    console.log('🟢 AR MODE DETECTED - Scaling to:', this.data.arScale);
+                    document.body.classList.add('ar-mode');
+                    document.body.classList.remove('vr-mode');
+                } else {
+                    // VRモード
+                    this.currentScale = this.data.vrScale;
+                    console.log('🔵 VR MODE DETECTED - Scaling to:', this.data.vrScale);
+                    document.body.classList.add('vr-mode');
+                    document.body.classList.remove('ar-mode');
+                }
+                
+                this.applyScale(this.currentScale);
             } else {
-                // VRモード
-                this.currentScale = this.data.vrScale;
-                console.log('VR MODE DETECTED - Scaling to:', this.data.vrScale);
-                document.body.classList.add('vr-mode');
-                document.body.classList.remove('ar-mode');
+                console.log('⚠️ No XR session found, defaulting to VR scale');
+                this.applyScale(this.data.vrScale);
             }
-            
-            this.applyScale(this.currentScale);
+        } else {
+            console.log('⚠️ XR Manager not presenting, defaulting to VR scale');
+            this.applyScale(this.data.vrScale);
         }
     },
     
-    // Oculusがパススルーモードかどうかを確認する補助メソッド
-    isOculusInPassthrough: function() {
-        // OculusブラウザのパススルーモードをURLパラメータで確認
-        return window.location.search.includes('passthroughMode=true') || 
-               window.location.search.includes('ar=true');
+    detectARMode: function(session) {
+        // Method 1: Session mode による検出 (最も確実)
+        if (session.mode === 'immersive-ar') {
+            console.log('✅ AR detected via session mode: immersive-ar');
+            return true;
+        }
+        
+        // Method 2: Environment blend mode による検出
+        if (session.environmentBlendMode) {
+            const arBlendModes = ['additive', 'alpha-blend', 'screen'];
+            if (arBlendModes.includes(session.environmentBlendMode)) {
+                console.log('✅ AR detected via environmentBlendMode:', session.environmentBlendMode);
+                return true;
+            }
+        }
+        
+        // Method 3: Enabled features による検出
+        if (session.enabledFeatures) {
+            const arFeatures = ['hit-test', 'plane-detection', 'anchors', 'camera-access'];
+            const featuresArray = Array.from(session.enabledFeatures);
+            const hasARFeature = arFeatures.some(feature => featuresArray.includes(feature));
+            if (hasARFeature) {
+                console.log('✅ AR detected via enabled features:', featuresArray);
+                return true;
+            }
+        }
+        
+        // Method 4: Meta Quest Passthrough 特有の検出
+        if (this.isMetaQuestPassthrough()) {
+            console.log('✅ AR detected via Meta Quest Passthrough indicators');
+            return true;
+        }
+        
+        console.log('❌ No AR indicators found, assuming VR mode');
+        return false;
+    },
+    
+    isMetaQuestPassthrough: function() {
+        // User agent による Quest 検出
+        const isQuest = navigator.userAgent.includes('Quest') || 
+                       navigator.userAgent.includes('OculusBrowser');
+        
+        if (!isQuest) return false;
+        
+        // Passthrough mode indicators
+        const hasPassthroughIndicators = (
+            // URL parameters
+            window.location.search.includes('passthrough=true') ||
+            window.location.search.includes('ar=true') ||
+            // DOM indicators
+            document.querySelector('[ar-mode]') !== null ||
+            // Quest specific APIs
+            ('getEnvironmentBlendMode' in navigator)
+        );
+        
+        console.log('Quest device detected:', isQuest, 'Passthrough indicators:', hasPassthroughIndicators);
+        return hasPassthroughIndicators;
+    },
+    
+    checkURLParameters: function() {
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('ar') === 'true' || urlParams.get('passthrough') === 'true') {
+            console.log('🔧 AR mode forced via URL parameters');
+            this.currentScale = this.data.arScale;
+            this.applyScale(this.currentScale);
+            document.body.classList.add('ar-mode');
+            document.body.classList.add('url-forced-ar');
+        }
+        
+        if (urlParams.get('debug') === 'true') {
+            console.log('🔧 Debug mode enabled');
+            this.sceneEl.setAttribute('stats', 'true');
+        }
     },
 
     onExitXR: function() {
+        // Clear any pending timers
+        if (this.checkDelayTimer) {
+            clearTimeout(this.checkDelayTimer);
+            this.checkDelayTimer = null;
+        }
+        
         // Reset to default when exiting XR
         this.currentScale = this.data.vrScale;
         this.applyScale(this.currentScale);
-        console.log('Exited XR - resetting scale to:', this.data.vrScale);
+        console.log('🚪 Exited XR - resetting scale to:', this.data.vrScale);
+        
+        // Clean up classes
+        document.body.classList.remove('ar-mode', 'vr-mode', 'url-forced-ar');
     },
     
     applyScale: function(scale) {
         this.el.setAttribute('scale', scale + ' ' + scale + ' ' + scale);
+        console.log('📏 Applied scale:', scale, 'to element:', this.el.id || this.el.tagName);
+    },
+    
+    remove: function() {
+        // Clean up
+        if (this.checkDelayTimer) {
+            clearTimeout(this.checkDelayTimer);
+        }
+        this.sceneEl.removeEventListener('enter-vr', this.onEnterXR);
+        this.sceneEl.removeEventListener('exit-vr', this.onExitXR);
+        document.body.classList.remove('ar-mode', 'vr-mode', 'url-forced-ar');
     }
 });
 
