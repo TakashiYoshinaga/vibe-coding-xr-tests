@@ -497,7 +497,6 @@ AFRAME.registerComponent('ar-scale-adjuster', {
     },
     
     checkXRMode: function() {
-        // A-Frame 1.7での正しいXRセッションアクセス方法
         const renderer = this.sceneEl.renderer;
         const xrManager = renderer.xr;
         
@@ -505,21 +504,18 @@ AFRAME.registerComponent('ar-scale-adjuster', {
             const session = xrManager.getSession();
             
             if (session) {
-                // ARモードの検出
                 const isAR = this.detectARMode(session);
                 
                 if (isAR) {
-                    // ARモード
-                    this.currentScale = this.data.arScale;
+                    // ARモード: ARスケールとAR位置を適用
                     document.body.classList.add('ar-mode');
                     document.body.classList.remove('vr-mode');
-                    this.applyTransform(this.currentScale, this.data.arYOffset, true);
+                    this.applyTransform(this.data.arScale, this.data.arYOffset, true);
                 } else {
-                    // VRモード
-                    this.currentScale = this.data.vrScale;
+                    // VRモード: VRスケールとVR位置を適用
                     document.body.classList.add('vr-mode');
                     document.body.classList.remove('ar-mode');
-                    this.applyTransform(this.currentScale, this.data.vrYOffset, false);
+                    this.applyTransform(this.data.vrScale, this.data.vrYOffset, false);
                 }
             } else {
                 this.applyTransform(this.data.vrScale, this.data.vrYOffset, false);
@@ -584,45 +580,42 @@ AFRAME.registerComponent('ar-scale-adjuster', {
     
     checkURLParameters: function() {
         const urlParams = new URLSearchParams(window.location.search);
+        
         if (urlParams.get('ar') === 'true' || urlParams.get('passthrough') === 'true') {
-            this.currentScale = this.data.arScale;
-            this.applyTransform(this.currentScale, this.data.arYOffset, true);
+            this.applyTransform(this.data.arScale, this.data.arYOffset, true);
             document.body.classList.add('ar-mode');
             document.body.classList.add('url-forced-ar');
         }
     },
 
     onExitXR: function() {
-        // Clear any pending timers
         if (this.checkDelayTimer) {
             clearTimeout(this.checkDelayTimer);
             this.checkDelayTimer = null;
         }
         
-        // Reset to default when exiting XR
-        this.currentScale = this.data.vrScale;
-        this.applyTransform(this.currentScale, this.data.vrYOffset, false);
+        // デスクトップモードに戻る: VRスケールとVR位置を適用
+        this.applyTransform(this.data.vrScale, this.data.vrYOffset, false);
         
-        // Clean up classes
+        // CSSクラスをクリーンアップ
         document.body.classList.remove('ar-mode', 'vr-mode', 'url-forced-ar');
         
-        // Ensure scene is visible and properly reset
+        // シーンの可視性を確保
         const scene = this.sceneEl;
         if (scene && scene.object3D) {
             scene.object3D.visible = true;
-            // Reset scene scale if it was modified
             scene.object3D.scale.set(1, 1, 1);
         }
     },
     
     applyTransform: function(scale, yOffset, isAR) {
-        // Apply scale
+        // スケールと位置を同時に設定
         this.el.setAttribute('scale', scale + ' ' + scale + ' ' + scale);
         
-        // Choose the appropriate default position based on mode
+        // モードに応じた基準位置を選択
         const basePosition = isAR ? this.defaultPositionAR : this.defaultPositionVR;
         
-        // Apply position with Y offset - always based on the appropriate default position
+        // Y オフセットを適用した位置を設定
         const newPosition = {
             x: basePosition.x,
             y: basePosition.y + yOffset,
