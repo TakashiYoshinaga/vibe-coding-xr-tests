@@ -78,34 +78,21 @@ AFRAME.registerComponent('planet-motion', {
 // Component for VR zoom controls
 AFRAME.registerComponent('vr-zoom', {
     init: function() {
-        this.scale = { x: 1, y: 1, z: 1 };
-        // this.scene = document.querySelector('a-scene');
+        this.solarSystem = document.getElementById('solar-system');
         this.isVR = false;
-        // 変更: this.elが#solar-systemであることを想定
-        this.target = this.el;
-
-        // Handle VR mode changes
+        this.lastScale = { x: 1, y: 1, z: 1 };
+        // VRモード判定
         this.el.sceneEl.addEventListener('enter-vr', () => {
             this.isVR = true;
         });
         this.el.sceneEl.addEventListener('exit-vr', () => {
             this.isVR = false;
-            // Reset scale when exiting VR
-            this.target.setAttribute('scale', '1 1 1');
+            if (this.solarSystem) this.solarSystem.setAttribute('scale', '1 1 1');
         });
-
-        // For Oculus/Meta Quest controllers
-        this.el.sceneEl.addEventListener('thumbstickmoved', (evt) => {
+        // axismoveイベントを監視
+        this.el.addEventListener('axismove', (evt) => {
             if (!this.isVR) return;
-            // evt.detail.y: 前後方向
-            if (typeof evt.detail.y === 'number' && Math.abs(evt.detail.y) > 0.01) {
-                const scaleFactor = 1 - (evt.detail.y * 0.05);
-                this.updateScale(scaleFactor);
-            }
-        });
-        // Alternative for older versions of A-Frame
-        this.el.sceneEl.addEventListener('axismove', (evt) => {
-            if (!this.isVR) return;
+            // evt.detail.axis[1]がジョイスティック前後
             if (evt.detail.axis && evt.detail.axis.length > 1 && Math.abs(evt.detail.axis[1]) > 0.01) {
                 const scaleFactor = 1 - (evt.detail.axis[1] * 0.05);
                 this.updateScale(scaleFactor);
@@ -113,14 +100,12 @@ AFRAME.registerComponent('vr-zoom', {
         });
     },
     updateScale: function(factor) {
-        // Get the current scale of the solar system
-        const currentScale = this.target.getAttribute('scale');
-        // Calculate new scale (clamped between 0.1 and 10)
+        if (!this.solarSystem) return;
+        const currentScale = this.solarSystem.getAttribute('scale');
         const newX = Math.min(Math.max(currentScale.x * factor, 0.1), 10);
         const newY = Math.min(Math.max(currentScale.y * factor, 0.1), 10);
         const newZ = Math.min(Math.max(currentScale.z * factor, 0.1), 10);
-        // Apply the new scale to the solar system
-        this.target.setAttribute('scale', `${newX} ${newY} ${newZ}`);
+        this.solarSystem.setAttribute('scale', `${newX} ${newY} ${newZ}`);
     }
 });
 

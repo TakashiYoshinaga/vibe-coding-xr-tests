@@ -73,7 +73,7 @@
 </head>
 <body>
     <a-scene xr-mode-ui="XRMode:xr"
-             background="color: #555555"
+             background="color: #000000"
              antialias="true"
              stats="false"
              debug="false"
@@ -141,6 +141,8 @@
             <a-camera look-controls="enabled: true"
                      wasd-controls="enabled: true">
             </a-camera>
+            <!-- 右手コントローラ用エンティティ -->
+            <a-entity id="right-controller" tracked-controls="hand: right"></a-entity>
         </a-entity>
 
         <!-- Lighting -->
