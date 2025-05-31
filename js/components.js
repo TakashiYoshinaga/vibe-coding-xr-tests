@@ -47,28 +47,17 @@ AFRAME.registerComponent('debug-manager', {
         
         // Set up gamepad polling for direct input detection
         this.setupGamepadMonitoring();
-    },
-      setupControllerMonitoring: function() {
+    },    setupControllerMonitoring: function() {
         // Monitor both controllers
         const leftController = document.getElementById('left-controller');
         const rightController = document.getElementById('right-controller');
         
-        this.addDebugMessage(`Looking for controllers...`);
-        this.addDebugMessage(`Left controller found: ${leftController ? 'YES' : 'NO'}`);
-        this.addDebugMessage(`Right controller found: ${rightController ? 'YES' : 'NO'}`);
-        
         if (leftController) {
-            this.addDebugMessage(`Setting up left controller monitoring`);
             this.monitorController(leftController, 'L');
-        } else {
-            this.addDebugMessage(`ERROR: Left controller not found!`);
         }
         
         if (rightController) {
-            this.addDebugMessage(`Setting up right controller monitoring`);
             this.monitorController(rightController, 'R');
-        } else {
-            this.addDebugMessage(`ERROR: Right controller not found!`);
         }
         
         // Also monitor global gamepad events
@@ -276,16 +265,11 @@ AFRAME.registerComponent('vr-debug', {
         const controllerId = this.el.id;
         const side = controllerId.includes('left') ? 'L' : 'R';
         
-        // Debug the component initialization
-        console.log(`vr-debug component initializing for ${controllerId}`);
-        
         // Register with debug manager when available
         const registerWithManager = () => {
             if (window.VR_DEBUG_MANAGER) {
-                window.VR_DEBUG_MANAGER.addDebugMessage(`Debug monitoring enabled for ${side} controller (${controllerId})`);
-                console.log(`vr-debug registered for ${controllerId}`);
+                window.VR_DEBUG_MANAGER.addDebugMessage(`Debug monitoring enabled for ${side} controller`);
             } else {
-                console.log(`VR_DEBUG_MANAGER not ready for ${controllerId}, retrying...`);
                 setTimeout(registerWithManager, 500);
             }
         };
