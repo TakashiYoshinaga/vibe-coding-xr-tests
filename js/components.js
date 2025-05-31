@@ -83,8 +83,10 @@ AFRAME.registerComponent('vr-zoom', {
         this.isVR = false;
         this.lastScale = { x: 1, y: 1, z: 1 };
         
-        // デバッグ表示用のエレメントを作成
-        this.createDebugDisplay();
+        // 少し遅延してデバッグ表示を作成（A-Frameの初期化完了を待つ）
+        setTimeout(() => {
+            this.createDebugDisplay();
+        }, 1000);
         
         // VRモード判定
         this.el.sceneEl.addEventListener('enter-vr', () => {
@@ -143,29 +145,71 @@ AFRAME.registerComponent('vr-zoom', {
     createDebugDisplay: function() {
         // VR内で見えるデバッグテキストエンティティを作成
         this.debugEntity = document.createElement('a-entity');
-        this.debugEntity.setAttribute('position', '0 2 -2');
+        // カメラの前方、やや上に配置
+        this.debugEntity.setAttribute('position', '0 2.5 -1.5');
+        this.debugEntity.setAttribute('rotation', '0 0 0');
         this.debugEntity.setAttribute('text', {
             value: 'VR Debug Console\nWaiting for events...',
             color: '#00ff00',
-            align: 'left',
-            width: 6
+            align: 'center',
+            width: 8,
+            wrapCount: 40
         });
-        document.querySelector('a-scene').appendChild(this.debugEntity);
+        // 背景を追加して見やすくする
+        this.debugEntity.setAttribute('geometry', {
+            primitive: 'plane',
+            width: 3,
+            height: 2
+        });
+        this.debugEntity.setAttribute('material', {
+            color: '#000000',
+            opacity: 0.8,
+            transparent: true
+        });
+        
+        // カメラリグに追加してカメラと一緒に動くようにする
+        const cameraRig = document.getElementById('rig');
+        if (cameraRig) {
+            cameraRig.appendChild(this.debugEntity);
+        } else {
+            document.querySelector('a-scene').appendChild(this.debugEntity);
+        }
+        
         this.debugMessages = ['VR Debug Console', 'Component initialized'];
+        this.addDebugMessage('Debug display created');
     },
     
     addDebugMessage: function(message) {
         const timestamp = new Date().toLocaleTimeString();
-        this.debugMessages.push(`${timestamp}: ${message}`);
+        const fullMessage = `${timestamp}: ${message}`;
+        this.debugMessages.push(fullMessage);
+        
         // 最新の10メッセージのみ保持
         if (this.debugMessages.length > 10) {
             this.debugMessages.shift();
         }
+        
         // VR内のテキストを更新
         if (this.debugEntity) {
             this.debugEntity.setAttribute('text', 'value', this.debugMessages.join('\n'));
         }
-        console.log(`🔧 VR Debug: ${message}`);
+        
+        // デスクトップ用のデバッグ表示も更新
+        let desktopDebug = document.getElementById('desktop-debug');
+        if (!desktopDebug) {
+            desktopDebug = document.createElement('div');
+            desktopDebug.id = 'desktop-debug';
+            desktopDebug.style.cssText = `
+                position: fixed; top: 10px; right: 10px; z-index: 1000;
+                background: rgba(0,0,0,0.8); color: #00ff00; padding: 10px;
+                font-family: monospace; font-size: 12px; border-radius: 5px;
+                max-width: 300px; max-height: 300px; overflow-y: auto;
+            `;
+            document.body.appendChild(desktopDebug);
+        }
+        desktopDebug.innerHTML = this.debugMessages.join('<br>');
+        
+        console.log(`🔧 VR Debug: ${fullMessage}`);
     },
     
     updateScale: function(factor) {
