@@ -70,7 +70,7 @@
 </head>
 <body>
     <a-scene xr-mode-ui="XRMode:xr"
-             background="color: #000000"
+             background="color: #666666"
              antialias="true"
              stats="false"
              debug="false"
@@ -138,7 +138,11 @@
             <a-camera look-controls="enabled: true"
                      wasd-controls="enabled: true">
             </a-camera>
-            <!-- 左手コントローラ用エンティティ (テスト用) -->
+            
+            <!-- INDEPENDENT DEBUG SYSTEM - Comment out this entity to disable all debug functionality -->
+            <a-entity debug-manager></a-entity>
+            
+            <!-- Left hand controller -->
             <a-entity id="left-controller" 
                      oculus-touch-controls="hand: left" 
                      vive-controls="hand: left"
@@ -147,13 +151,15 @@
                      vr-zoom
                      vr-debug
                      visible="true"></a-entity>
-            <!-- 右手コントローラ用エンティティ -->
+                     
+            <!-- Right hand controller -->
             <a-entity id="right-controller" 
                      oculus-touch-controls="hand: right" 
                      vive-controls="hand: right"
                      windows-motion-controls="hand: right"
                      generic-tracked-controller="hand: right"
                      vr-zoom
+                     vr-debug
                      visible="true"></a-entity>
         </a-entity>
 
