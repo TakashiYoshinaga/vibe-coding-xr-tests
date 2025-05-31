@@ -460,9 +460,13 @@ AFRAME.registerComponent('ar-scale-adjuster', {
         this.sceneEl = this.el.sceneEl;
         this.currentScale = this.data.vrScale;
         this.checkDelayTimer = null;
-        
-        // Store original position from the element's current position attribute
-        this.originalPosition = this.el.getAttribute('position');
+          // Store original position from the element's current position attribute (deep copy to avoid reference issues)
+        const pos = this.el.getAttribute('position');
+        this.originalPosition = {
+            x: pos.x,
+            y: pos.y,
+            z: pos.z
+        };
 
         // Bind methods
         this.onEnterXR = this.onEnterXR.bind(this);
