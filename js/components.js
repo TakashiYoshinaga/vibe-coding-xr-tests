@@ -78,8 +78,6 @@ AFRAME.registerComponent('planet-motion', {
 // Component for debugging all VR controller events
 AFRAME.registerComponent('vr-debug', {
     init: function() {
-        console.log('🔧 vr-debug component initialized on:', this.el.id || this.el.tagName);
-        
         this.addDebugMessage = null;
         
         // vr-zoomコンポーネントのaddDebugMessage関数を探す
@@ -121,7 +119,6 @@ AFRAME.registerComponent('vr-debug', {
     },
     
     logEvent: function(message) {
-        console.log(`🔧 Left Controller: ${message}`);
         if (this.addDebugMessage) {
             this.addDebugMessage(`L: ${message}`);
         }
@@ -131,8 +128,6 @@ AFRAME.registerComponent('vr-debug', {
 // Component for VR zoom controls
 AFRAME.registerComponent('vr-zoom', {
     init: function() {
-        console.log('🔧 vr-zoom component initialized on:', this.el.id || this.el.tagName);
-        
         this.solarSystem = document.getElementById('solar-system');
         this.isVR = false;
         this.lastScale = { x: 1, y: 1, z: 1 };
@@ -204,8 +199,6 @@ AFRAME.registerComponent('vr-zoom', {
         this.el.addEventListener('buttonup', (evt) => {
             this.addDebugMessage(`${this.controllerSide} buttonup: id=${evt.detail.id}`);
         });
-        
-        console.log(`🔧 All event listeners registered for ${this.controllerSide} controller`);
         
         // 追加: Generic gamepadイベントも監視
         window.addEventListener('gamepadconnected', (evt) => {
@@ -291,13 +284,9 @@ AFRAME.registerComponent('vr-zoom', {
         `;
         desktopDebug.innerHTML = '<div style="font-weight: bold; color: #ffff00;">VR Debug Console</div><div>Component initialized</div>';
         document.body.appendChild(desktopDebug);
-        
-        console.log('🔧 Desktop debug display created and added to DOM');
     },
     
     createDebugDisplay: function() {
-        console.log('🔧 Creating VR debug display...');
-        
         // 既存のデバッグエンティティを削除
         if (this.debugEntity) {
             this.debugEntity.remove();
@@ -340,13 +329,10 @@ AFRAME.registerComponent('vr-zoom', {
         
         if (cameraRig) {
             cameraRig.appendChild(this.debugEntity);
-            console.log('🔧 Debug display added to camera rig');
         } else if (camera) {
             camera.appendChild(this.debugEntity);
-            console.log('🔧 Debug display added to camera');
         } else {
             document.querySelector('a-scene').appendChild(this.debugEntity);
-            console.log('🔧 Debug display added to scene');
         }
         
         this.addDebugMessage('VR debug display created');
@@ -394,8 +380,6 @@ AFRAME.registerComponent('vr-zoom', {
                 return;
             }
         }
-        
-        console.log(`🔧 VR Debug (${this.controllerSide}): ${fullMessage}`);
     },
     
     updateScale: function(factor) {
@@ -426,8 +410,6 @@ AFRAME.registerComponent('vr-zoom', {
         if (desktopDebug) {
             desktopDebug.remove();
         }
-        
-        console.log('🔧 vr-zoom component removed');
     }
 });
 
@@ -448,8 +430,6 @@ AFRAME.registerComponent('ar-scale-adjuster', {
         
         // Store original position from the element's current position attribute
         this.originalPosition = this.el.getAttribute('position');
-        console.log('🏁 AR Scale Adjuster initialized with original position:', this.originalPosition);
-        console.log('🏁 Schema values - arYOffset:', this.data.arYOffset, 'vrYOffset:', this.data.vrYOffset);
 
         // Bind methods
         this.onEnterXR = this.onEnterXR.bind(this);
@@ -468,8 +448,6 @@ AFRAME.registerComponent('ar-scale-adjuster', {
     },
 
     onEnterXR: function() {
-        console.log('XR mode entered - checking mode...');
-        
         // A-Frame 1.7でのXRセッションアクセス方法
         // 少し遅延させてXRセッションが完全に初期化されるまで待つ
         this.checkDelayTimer = setTimeout(this.checkXRMode, 500);
@@ -484,35 +462,26 @@ AFRAME.registerComponent('ar-scale-adjuster', {
             const session = xrManager.getSession();
             
             if (session) {
-                console.log('XR Session found');
-                console.log('Session mode:', session.mode);
-                console.log('Environment Blend Mode:', session.environmentBlendMode);
-                console.log('Session enabled features:', session.enabledFeatures);
-                
                 // ARモードの検出
                 const isAR = this.detectARMode(session);
                 
                 if (isAR) {
                     // ARモード
                     this.currentScale = this.data.arScale;
-                    console.log('🟢 AR MODE DETECTED - Scaling to:', this.data.arScale, 'Y offset:', this.data.arYOffset);
                     document.body.classList.add('ar-mode');
                     document.body.classList.remove('vr-mode');
                     this.applyTransform(this.currentScale, this.data.arYOffset);
                 } else {
                     // VRモード
                     this.currentScale = this.data.vrScale;
-                    console.log('🔵 VR MODE DETECTED - Scaling to:', this.data.vrScale, 'Y offset:', this.data.vrYOffset);
                     document.body.classList.add('vr-mode');
                     document.body.classList.remove('ar-mode');
                     this.applyTransform(this.currentScale, this.data.vrYOffset);
                 }
             } else {
-                console.log('⚠️ No XR session found, defaulting to VR scale');
                 this.applyTransform(this.data.vrScale, this.data.vrYOffset);
             }
         } else {
-            console.log('⚠️ XR Manager not presenting, defaulting to VR scale');
             this.applyTransform(this.data.vrScale, this.data.vrYOffset);
         }
     },
@@ -520,7 +489,6 @@ AFRAME.registerComponent('ar-scale-adjuster', {
     detectARMode: function(session) {
         // Method 1: Session mode による検出 (最も確実)
         if (session.mode === 'immersive-ar') {
-            console.log('✅ AR detected via session mode: immersive-ar');
             return true;
         }
         
@@ -528,7 +496,6 @@ AFRAME.registerComponent('ar-scale-adjuster', {
         if (session.environmentBlendMode) {
             const arBlendModes = ['additive', 'alpha-blend', 'screen'];
             if (arBlendModes.includes(session.environmentBlendMode)) {
-                console.log('✅ AR detected via environmentBlendMode:', session.environmentBlendMode);
                 return true;
             }
         }
@@ -539,18 +506,15 @@ AFRAME.registerComponent('ar-scale-adjuster', {
             const featuresArray = Array.from(session.enabledFeatures);
             const hasARFeature = arFeatures.some(feature => featuresArray.includes(feature));
             if (hasARFeature) {
-                console.log('✅ AR detected via enabled features:', featuresArray);
                 return true;
             }
         }
         
         // Method 4: Meta Quest Passthrough 特有の検出
         if (this.isMetaQuestPassthrough()) {
-            console.log('✅ AR detected via Meta Quest Passthrough indicators');
             return true;
         }
         
-        console.log('❌ No AR indicators found, assuming VR mode');
         return false;
     },
     
@@ -572,22 +536,16 @@ AFRAME.registerComponent('ar-scale-adjuster', {
             ('getEnvironmentBlendMode' in navigator)
         );
         
-        console.log('Quest device detected:', isQuest, 'Passthrough indicators:', hasPassthroughIndicators);
         return hasPassthroughIndicators;
     },
     
     checkURLParameters: function() {
         const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.get('ar') === 'true' || urlParams.get('passthrough') === 'true') {
-            console.log('🔧 AR mode forced via URL parameters');
             this.currentScale = this.data.arScale;
             this.applyTransform(this.currentScale, this.data.arYOffset);
             document.body.classList.add('ar-mode');
             document.body.classList.add('url-forced-ar');
-        }
-        
-        if (urlParams.get('debug') === 'true') {
-            console.log('🔧 Debug mode enabled');
         }
     },
 
@@ -601,7 +559,6 @@ AFRAME.registerComponent('ar-scale-adjuster', {
         // Reset to default when exiting XR
         this.currentScale = this.data.vrScale;
         this.applyTransform(this.currentScale, this.data.vrYOffset);
-        console.log('🚪 Exited XR - resetting scale to:', this.data.vrScale, 'Y offset to:', this.data.vrYOffset);
         
         // Clean up classes
         document.body.classList.remove('ar-mode', 'vr-mode', 'url-forced-ar');
@@ -616,9 +573,6 @@ AFRAME.registerComponent('ar-scale-adjuster', {
     },
     
     applyTransform: function(scale, yOffset) {
-        console.log('🔧 applyTransform called with:', { scale, yOffset });
-        console.log('🔧 originalPosition:', this.originalPosition);
-        
         // Apply scale
         this.el.setAttribute('scale', scale + ' ' + scale + ' ' + scale);
         
@@ -629,14 +583,10 @@ AFRAME.registerComponent('ar-scale-adjuster', {
             z: this.originalPosition.z
         };
         
-        console.log('🔧 Calculated newPosition:', newPosition);
         this.el.setAttribute('position', newPosition);
         
         // Verify the position was actually set
         const verifyPosition = this.el.getAttribute('position');
-        console.log('🔧 Verified position after setting:', verifyPosition);
-        
-        console.log('📏 Applied transform - Scale:', scale, 'Y offset:', yOffset, 'to element:', this.el.id || this.el.tagName);
     },
     
     remove: function() {
@@ -697,8 +647,6 @@ AFRAME.registerComponent('stars', {
 // Component for debugging all VR controller events
 AFRAME.registerComponent('vr-debug', {
     init: function() {
-        console.log('🔧 vr-debug component initialized on:', this.el.id || this.el.tagName);
-        
         this.addDebugMessage = null;
         
         // vr-zoomコンポーネントのaddDebugMessage関数を探す
@@ -740,7 +688,6 @@ AFRAME.registerComponent('vr-debug', {
     },
     
     logEvent: function(message) {
-        console.log(`🔧 Left Controller: ${message}`);
         if (this.addDebugMessage) {
             this.addDebugMessage(`L: ${message}`);
         }

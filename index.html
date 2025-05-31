@@ -31,8 +31,6 @@
             
             // Debug mode
             if (urlParams.get('debug') === 'true') {
-                console.log('🔧 Debug mode enabled');
-                
                 // Add debug info to the page
                 const debugInfo = document.createElement('div');
                 debugInfo.id = 'debug-info';
@@ -65,7 +63,6 @@
             
             // AR mode forcing
             if (urlParams.get('ar') === 'true') {
-                console.log('🔧 AR mode forced via URL parameter');
                 document.body.classList.add('forced-ar-mode');
             }
         });
