@@ -447,7 +447,8 @@ AFRAME.registerComponent('ar-scale-adjuster', {
         arScale: { type: 'number', default: 0.5 },  // Scale in AR mode (half size)
         vrScale: { type: 'number', default: 1.0 },   // Scale in VR/normal mode
         arYOffset: { type: 'number', default: 1.0 }, // Y position offset in AR mode (1m higher)
-        vrYOffset: { type: 'number', default: 0.0 }  // Y position offset in VR/normal mode
+        vrYOffset: { type: 'number', default: 0.0 }, // Y position offset in VR/normal mode
+        defaultPos: { type: 'vec3', default: { x: 0, y: 0, z: -5 } } // Default position to reset to
     },
     
     init: function() {
@@ -456,8 +457,22 @@ AFRAME.registerComponent('ar-scale-adjuster', {
         this.currentScale = this.data.vrScale;
         this.checkDelayTimer = null;
         
-        // Store original position from the element's current position attribute
-        this.originalPosition = this.el.getAttribute('position');
+        // Store the default position from schema (fallback to current position)
+        this.defaultPosition = {
+            x: this.data.defaultPos.x,
+            y: this.data.defaultPos.y,
+            z: this.data.defaultPos.z
+        };
+        
+        // If element has a position set, use that as default instead
+        const currentPos = this.el.getAttribute('position');
+        if (currentPos && (currentPos.x !== 0 || currentPos.y !== 0 || currentPos.z !== 0)) {
+            this.defaultPosition = {
+                x: currentPos.x,
+                y: currentPos.y,
+                z: currentPos.z
+            };
+        }
 
         // Bind methods
         this.onEnterXR = this.onEnterXR.bind(this);
@@ -604,11 +619,11 @@ AFRAME.registerComponent('ar-scale-adjuster', {
         // Apply scale
         this.el.setAttribute('scale', scale + ' ' + scale + ' ' + scale);
         
-        // Apply position with Y offset
+        // Apply position with Y offset - always based on defaultPosition
         const newPosition = {
-            x: this.originalPosition.x,
-            y: this.originalPosition.y + yOffset,
-            z: this.originalPosition.z
+            x: this.defaultPosition.x,
+            y: this.defaultPosition.y + yOffset,
+            z: this.defaultPosition.z
         };
         
         this.el.setAttribute('position', newPosition);
