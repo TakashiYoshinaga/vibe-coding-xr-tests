@@ -47,7 +47,8 @@ AFRAME.registerComponent('debug-manager', {
         
         // Set up gamepad polling for direct input detection
         this.setupGamepadMonitoring();
-    },    setupControllerMonitoring: function() {
+    },
+    setupControllerMonitoring: function() {
         // Monitor both controllers
         const leftController = document.getElementById('left-controller');
         const rightController = document.getElementById('right-controller');

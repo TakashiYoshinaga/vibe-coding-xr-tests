@@ -6,67 +6,7 @@
     <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
     <script src="js/components.js"></script>
     
-    <!-- Styling for debug and test elements -->
-    <style>
-        .ar-mode #solar-system {
-            transform: scale(0.5);
-            transition: transform 0.3s ease;
-        }
-        
-        .forced-ar-mode #solar-system {
-            transform: scale(0.5);
-        }
-        
-        #debug-info {
-            max-height: 200px;
-            overflow-y: auto;
-        }
-    </style>
-    
-    <!-- Debug script for AR/VR testing -->
-    <script>
-        // Debug utilities for AR/VR mode testing
-        window.addEventListener('load', function() {
-            const urlParams = new URLSearchParams(window.location.search);
-            
-            // Debug mode
-            if (urlParams.get('debug') === 'true') {
-                // Add debug info to the page
-                const debugInfo = document.createElement('div');
-                debugInfo.id = 'debug-info';
-                debugInfo.style.cssText = `
-                    position: fixed; top: 10px; left: 10px; z-index: 1000;
-                    background: rgba(0,0,0,0.8); color: white; padding: 10px;
-                    font-family: monospace; font-size: 12px; border-radius: 5px;
-                    max-width: 300px;
-                `;
-                debugInfo.innerHTML = `
-                    <div>Debug Mode Active</div>
-                    <div>User Agent: ${navigator.userAgent.includes('Quest') ? 'Meta Quest' : 'Other'}</div>
-                    <div>URL Params: ${window.location.search || 'None'}</div>
-                    <div id="xr-status">XR Status: Not entered</div>
-                `;
-                document.body.appendChild(debugInfo);
-                
-                // Update XR status
-                const scene = document.querySelector('a-scene');
-                const statusDiv = document.getElementById('xr-status');
-                
-                scene.addEventListener('enter-vr', () => {
-                    statusDiv.textContent = 'XR Status: Entered XR mode';
-                });
-                
-                scene.addEventListener('exit-vr', () => {
-                    statusDiv.textContent = 'XR Status: Exited XR mode';
-                });
-            }
-            
-            // AR mode forcing
-            if (urlParams.get('ar') === 'true') {
-                document.body.classList.add('forced-ar-mode');
-            }
-        });
-    </script>
+
 </head>
 <body>
     <a-scene xr-mode-ui="XRMode:xr"
@@ -140,7 +80,7 @@
             </a-camera>
             
             <!-- INDEPENDENT DEBUG SYSTEM - Comment out this entity to disable all debug functionality -->
-            <!-- <a-entity debug-manager></a-entity>-->
+            <a-entity debug-manager></a-entity>
             
             <!-- Left hand controller -->
             <a-entity id="left-controller" 
