@@ -336,30 +336,25 @@ AFRAME.registerComponent('planet-motion', {
     },
     
     init: function() {
-        this.time = 0;
-        this.originalPosition = this.el.getAttribute('position');
+        // Use the working approach from components-old.js
     },
     
-    tick: function(time, deltaTime) {
-        this.time += deltaTime * 0.001; // Convert to seconds
+    tick: function(time, delta) {
+        const position = this.el.getAttribute('position');
+        const angle = this.data.revolutionSpeed * time;
         
-        // Rotate the planet around its own axis
-        const currentRotation = this.el.getAttribute('rotation');
+        // Calculate new position on orbit
+        const x = Math.cos(angle) * this.data.orbitRadius;
+        const z = Math.sin(angle) * this.data.orbitRadius;
+        
+        this.el.setAttribute('position', { x: x, y: position.y, z: z });
+        
+        // Rotate planet
+        const rotation = this.el.getAttribute('rotation');
         this.el.setAttribute('rotation', {
-            x: currentRotation.x,
-            y: currentRotation.y + this.data.rotationSpeed,
-            z: currentRotation.z
-        });
-        
-        // Revolve around the sun
-        const angle = this.time * this.data.revolutionSpeed;
-        const x = this.data.orbitRadius * Math.cos(angle);
-        const z = this.data.orbitRadius * Math.sin(angle);
-        
-        this.el.setAttribute('position', {
-            x: x,
-            y: this.originalPosition.y,
-            z: z
+            x: rotation.x,
+            y: rotation.y + this.data.rotationSpeed,
+            z: rotation.z
         });
     }
 });
