@@ -70,7 +70,7 @@
 </head>
 <body>
     <a-scene xr-mode-ui="XRMode:xr"
-             background="color: #666666"
+             background="color: #000000"
              antialias="true"
              stats="false"
              debug="false"
@@ -150,7 +150,10 @@
                      generic-tracked-controller="hand: left"
                      vr-zoom
                      vr-debug
-                     visible="true"></a-entity>
+                     visible="true">
+                <!-- Fallback visual for left controller -->
+                <a-box position="0 0 0" width="0.1" height="0.05" depth="0.2" color="#FF0000" visible="true"></a-box>
+            </a-entity>
                      
             <!-- Right hand controller -->
             <a-entity id="right-controller" 
@@ -160,7 +163,10 @@
                      generic-tracked-controller="hand: right"
                      vr-zoom
                      vr-debug
-                     visible="true"></a-entity>
+                     visible="true">
+                <!-- Fallback visual for right controller -->
+                <a-box position="0 0 0" width="0.1" height="0.05" depth="0.2" color="#00FF00" visible="true"></a-box>
+            </a-entity>
         </a-entity>
 
         <!-- Lighting -->
