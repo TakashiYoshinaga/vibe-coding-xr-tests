@@ -83,27 +83,29 @@ AFRAME.registerComponent('vr-zoom', {
         this.isVR = false;
         this.lastScale = { x: 1, y: 1, z: 1 };
         
+        // デバッグ表示用のエレメントを作成
+        this.createDebugDisplay();
+        
         // VRモード判定
         this.el.sceneEl.addEventListener('enter-vr', () => {
             this.isVR = true;
-            console.log('🔧 vr-zoom: Entered VR mode');
+            this.addDebugMessage('Entered VR mode');
         });
         this.el.sceneEl.addEventListener('exit-vr', () => {
             this.isVR = false;
-            console.log('🔧 vr-zoom: Exited VR mode');
+            this.addDebugMessage('Exited VR mode');
             if (this.solarSystem) this.solarSystem.setAttribute('scale', '1 1 1');
         });
         
         // axismoveイベントを監視
         this.el.addEventListener('axismove', (evt) => {
-            console.log('🔧 axismove event received:', evt.detail);
+            this.addDebugMessage(`axismove: ${JSON.stringify(evt.detail)}`);
             if (!this.isVR) {
-                console.log('🔧 Not in VR mode, ignoring axismove');
+                this.addDebugMessage('Not in VR mode, ignoring');
                 return;
             }
-            // evt.detail.axis[1]がジョイスティック前後
             if (evt.detail.axis && evt.detail.axis.length > 1 && Math.abs(evt.detail.axis[1]) > 0.01) {
-                console.log('🔧 Joystick Y axis detected:', evt.detail.axis[1]);
+                this.addDebugMessage(`Joystick Y: ${evt.detail.axis[1]}`);
                 const scaleFactor = 1 - (evt.detail.axis[1] * 0.05);
                 this.updateScale(scaleFactor);
             }
@@ -111,12 +113,12 @@ AFRAME.registerComponent('vr-zoom', {
         
         // コントローラー接続チェック
         this.el.addEventListener('controllerconnected', (evt) => {
-            console.log('🔧 Controller connected:', evt.detail);
+            this.addDebugMessage(`Controller connected: ${JSON.stringify(evt.detail)}`);
         });
         
-        // より多くのイベントを監視してみる
+        // より多くのイベントを監視
         this.el.addEventListener('thumbstickmoved', (evt) => {
-            console.log('🔧 thumbstickmoved event:', evt.detail);
+            this.addDebugMessage(`thumbstickmoved: ${JSON.stringify(evt.detail)}`);
             if (!this.isVR) return;
             if (evt.detail.y && Math.abs(evt.detail.y) > 0.01) {
                 const scaleFactor = 1 - (evt.detail.y * 0.05);
@@ -125,20 +127,57 @@ AFRAME.registerComponent('vr-zoom', {
         });
         
         this.el.addEventListener('trackpadmoved', (evt) => {
-            console.log('🔧 trackpadmoved event:', evt.detail);
+            this.addDebugMessage(`trackpadmoved: ${JSON.stringify(evt.detail)}`);
         });
+        
+        // ボタンイベントも監視
+        this.el.addEventListener('buttondown', (evt) => {
+            this.addDebugMessage(`buttondown: ${JSON.stringify(evt.detail)}`);
+        });
+        
+        this.el.addEventListener('buttonup', (evt) => {
+            this.addDebugMessage(`buttonup: ${JSON.stringify(evt.detail)}`);
+        });
+    },
+    
+    createDebugDisplay: function() {
+        // VR内で見えるデバッグテキストエンティティを作成
+        this.debugEntity = document.createElement('a-entity');
+        this.debugEntity.setAttribute('position', '0 2 -2');
+        this.debugEntity.setAttribute('text', {
+            value: 'VR Debug Console\nWaiting for events...',
+            color: '#00ff00',
+            align: 'left',
+            width: 6
+        });
+        document.querySelector('a-scene').appendChild(this.debugEntity);
+        this.debugMessages = ['VR Debug Console', 'Component initialized'];
+    },
+    
+    addDebugMessage: function(message) {
+        const timestamp = new Date().toLocaleTimeString();
+        this.debugMessages.push(`${timestamp}: ${message}`);
+        // 最新の10メッセージのみ保持
+        if (this.debugMessages.length > 10) {
+            this.debugMessages.shift();
+        }
+        // VR内のテキストを更新
+        if (this.debugEntity) {
+            this.debugEntity.setAttribute('text', 'value', this.debugMessages.join('\n'));
+        }
+        console.log(`🔧 VR Debug: ${message}`);
     },
     
     updateScale: function(factor) {
         if (!this.solarSystem) {
-            console.log('🔧 Solar system not found');
+            this.addDebugMessage('Solar system not found!');
             return;
         }
         const currentScale = this.solarSystem.getAttribute('scale');
         const newX = Math.min(Math.max(currentScale.x * factor, 0.1), 10);
         const newY = Math.min(Math.max(currentScale.y * factor, 0.1), 10);
         const newZ = Math.min(Math.max(currentScale.z * factor, 0.1), 10);
-        console.log('🔧 Updating scale from', currentScale, 'to', `${newX} ${newY} ${newZ}`);
+        this.addDebugMessage(`Scale: ${currentScale.x.toFixed(2)} → ${newX.toFixed(2)}`);
         this.solarSystem.setAttribute('scale', `${newX} ${newY} ${newZ}`);
     }
 });
