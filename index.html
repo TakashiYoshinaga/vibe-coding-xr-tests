@@ -141,8 +141,22 @@
             <a-camera look-controls="enabled: true"
                      wasd-controls="enabled: true">
             </a-camera>
+            <!-- 左手コントローラ用エンティティ (テスト用) -->
+            <a-entity id="left-controller" 
+                     oculus-touch-controls="hand: left" 
+                     vive-controls="hand: left"
+                     windows-motion-controls="hand: left"
+                     generic-tracked-controller="hand: left"
+                     vr-debug
+                     visible="true"></a-entity>
             <!-- 右手コントローラ用エンティティ -->
-            <a-entity id="right-controller" oculus-touch-controls="hand: right" vr-zoom></a-entity>
+            <a-entity id="right-controller" 
+                     oculus-touch-controls="hand: right" 
+                     vive-controls="hand: right"
+                     windows-motion-controls="hand: right"
+                     generic-tracked-controller="hand: right"
+                     vr-zoom
+                     visible="true"></a-entity>
         </a-entity>
 
         <!-- Lighting -->

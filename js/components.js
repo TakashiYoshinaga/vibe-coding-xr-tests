@@ -75,15 +75,74 @@ AFRAME.registerComponent('planet-motion', {
     }
 });
 
+// Component for debugging all VR controller events
+AFRAME.registerComponent('vr-debug', {
+    init: function() {
+        console.log('🔧 vr-debug component initialized on:', this.el.id || this.el.tagName);
+        
+        this.addDebugMessage = null;
+        
+        // vr-zoomコンポーネントのaddDebugMessage関数を探す
+        setTimeout(() => {
+            const rightController = document.getElementById('right-controller');
+            if (rightController && rightController.components['vr-zoom']) {
+                this.addDebugMessage = rightController.components['vr-zoom'].addDebugMessage.bind(rightController.components['vr-zoom']);
+                this.addDebugMessage(`Left controller debug enabled for ${this.el.id}`);
+            }
+        }, 500);
+        
+        // 左手コントローラーのイベントも監視
+        this.el.addEventListener('controllerconnected', (evt) => {
+            this.logEvent(`Left controller connected: ${evt.detail.name || 'unknown'}`);
+        });
+        
+        this.el.addEventListener('axismove', (evt) => {
+            this.logEvent(`Left axismove: axis[0]=${evt.detail.axis[0]?.toFixed(2)}, axis[1]=${evt.detail.axis[1]?.toFixed(2)}`);
+        });
+        
+        this.el.addEventListener('thumbstickmoved', (evt) => {
+            this.logEvent(`Left thumbstickmoved: x=${evt.detail.x?.toFixed(2)}, y=${evt.detail.y?.toFixed(2)}`);
+        });
+        
+        this.el.addEventListener('buttondown', (evt) => {
+            this.logEvent(`Left buttondown: id=${evt.detail.id}`);
+        });
+        
+        this.el.addEventListener('buttonup', (evt) => {
+            this.logEvent(`Left buttonup: id=${evt.detail.id}`);
+        });
+        
+        // さらに多くのイベント
+        ['triggerdown', 'triggerup', 'gripdown', 'gripup', 'menudown', 'menuup', 'systemdown', 'systemup', 'thumbstickdown', 'thumbstickup'].forEach(eventName => {
+            this.el.addEventListener(eventName, (evt) => {
+                this.logEvent(`Left ${eventName} event triggered`);
+            });
+        });
+    },
+    
+    logEvent: function(message) {
+        console.log(`🔧 Left Controller: ${message}`);
+        if (this.addDebugMessage) {
+            this.addDebugMessage(`L: ${message}`);
+        }
+    }
+});
+
 // Component for VR zoom controls
 AFRAME.registerComponent('vr-zoom', {
     init: function() {
         console.log('🔧 vr-zoom component initialized on:', this.el.id || this.el.tagName);
+        
         this.solarSystem = document.getElementById('solar-system');
         this.isVR = false;
         this.lastScale = { x: 1, y: 1, z: 1 };
+        this.debugMessages = [];
         
-        // 少し遅延してデバッグ表示を作成（A-Frameの初期化完了を待つ）
+        // 即座にデスクトップデバッグ表示を作成
+        this.createDesktopDebug();
+        this.addDebugMessage('vr-zoom component started');
+        
+        // 少し遅延してVRデバッグ表示を作成
         setTimeout(() => {
             this.createDebugDisplay();
         }, 1000);
@@ -101,7 +160,7 @@ AFRAME.registerComponent('vr-zoom', {
         
         // axismoveイベントを監視
         this.el.addEventListener('axismove', (evt) => {
-            this.addDebugMessage(`axismove: ${JSON.stringify(evt.detail)}`);
+            this.addDebugMessage(`axismove: axis[0]=${evt.detail.axis[0]?.toFixed(2)}, axis[1]=${evt.detail.axis[1]?.toFixed(2)}`);
             if (!this.isVR) {
                 this.addDebugMessage('Not in VR mode, ignoring');
                 return;
@@ -115,12 +174,12 @@ AFRAME.registerComponent('vr-zoom', {
         
         // コントローラー接続チェック
         this.el.addEventListener('controllerconnected', (evt) => {
-            this.addDebugMessage(`Controller connected: ${JSON.stringify(evt.detail)}`);
+            this.addDebugMessage(`Controller connected: ${evt.detail.name || 'unknown'}`);
         });
         
         // より多くのイベントを監視
         this.el.addEventListener('thumbstickmoved', (evt) => {
-            this.addDebugMessage(`thumbstickmoved: ${JSON.stringify(evt.detail)}`);
+            this.addDebugMessage(`thumbstickmoved: x=${evt.detail.x?.toFixed(2)}, y=${evt.detail.y?.toFixed(2)}`);
             if (!this.isVR) return;
             if (evt.detail.y && Math.abs(evt.detail.y) > 0.01) {
                 const scaleFactor = 1 - (evt.detail.y * 0.05);
@@ -129,85 +188,197 @@ AFRAME.registerComponent('vr-zoom', {
         });
         
         this.el.addEventListener('trackpadmoved', (evt) => {
-            this.addDebugMessage(`trackpadmoved: ${JSON.stringify(evt.detail)}`);
+            this.addDebugMessage(`trackpadmoved: x=${evt.detail.x?.toFixed(2)}, y=${evt.detail.y?.toFixed(2)}`);
         });
         
         // ボタンイベントも監視
         this.el.addEventListener('buttondown', (evt) => {
-            this.addDebugMessage(`buttondown: ${JSON.stringify(evt.detail)}`);
+            this.addDebugMessage(`buttondown: id=${evt.detail.id}`);
         });
         
         this.el.addEventListener('buttonup', (evt) => {
-            this.addDebugMessage(`buttonup: ${JSON.stringify(evt.detail)}`);
+            this.addDebugMessage(`buttonup: id=${evt.detail.id}`);
         });
+        
+        console.log('🔧 All event listeners registered');
+        
+        // 追加: Generic gamepadイベントも監視
+        window.addEventListener('gamepadconnected', (evt) => {
+            this.addDebugMessage(`Gamepad connected: ${evt.gamepad.id}`);
+        });
+        
+        window.addEventListener('gamepaddisconnected', (evt) => {
+            this.addDebugMessage(`Gamepad disconnected: ${evt.gamepad.id}`);
+        });
+        
+        // 追加: WebXRイベントも監視
+        if (navigator.xr) {
+            this.addDebugMessage('WebXR available');
+        } else {
+            this.addDebugMessage('WebXR not available');
+        }
+        
+        // Questコントローラ専用のイベントも追加
+        this.el.addEventListener('thumbstickdown', (evt) => {
+            this.addDebugMessage(`thumbstickdown: ${evt.detail.id}`);
+        });
+        
+        this.el.addEventListener('thumbstickup', (evt) => {
+            this.addDebugMessage(`thumbstickup: ${evt.detail.id}`);
+        });
+        
+        // より多くのコントローラーイベント
+        ['triggerdown', 'triggerup', 'gripdown', 'gripup', 'menudown', 'menuup', 'systemdown', 'systemup'].forEach(eventName => {
+            this.el.addEventListener(eventName, (evt) => {
+                this.addDebugMessage(`${eventName} event triggered`);
+            });
+        });
+        
+        // 定期的なゲームパッドポーリング (デバッグ用)
+        this.gamepadCheckInterval = setInterval(() => {
+            if (navigator.getGamepads && this.isVR) {
+                const gamepads = navigator.getGamepads();
+                for (let i = 0; i < gamepads.length; i++) {
+                    const gamepad = gamepads[i];
+                    if (gamepad && gamepad.connected) {
+                        // 右スティックの動きをチェック (通常axes[2], axes[3])
+                        if (gamepad.axes.length > 3) {
+                            const rightStickY = gamepad.axes[3];
+                            if (Math.abs(rightStickY) > 0.1) {
+                                this.addDebugMessage(`Gamepad right stick Y: ${rightStickY.toFixed(2)}`);
+                                const scaleFactor = 1 - (rightStickY * 0.05);
+                                this.updateScale(scaleFactor);
+                            }
+                        }
+                        // 左スティックもチェック (通常axes[0], axes[1])
+                        if (gamepad.axes.length > 1) {
+                            const leftStickY = gamepad.axes[1];
+                            if (Math.abs(leftStickY) > 0.1) {
+                                this.addDebugMessage(`Gamepad left stick Y: ${leftStickY.toFixed(2)}`);
+                                const scaleFactor = 1 - (leftStickY * 0.05);
+                                this.updateScale(scaleFactor);
+                            }
+                        }
+                    }
+                }
+            }
+        }, 100); // 100ms間隔でチェック
+    },
+    
+    createDesktopDebug: function() {
+        // 既存のデバッグ表示を削除
+        let existingDebug = document.getElementById('desktop-debug');
+        if (existingDebug) {
+            existingDebug.remove();
+        }
+        
+        // デスクトップ用のデバッグ表示を作成
+        let desktopDebug = document.createElement('div');
+        desktopDebug.id = 'desktop-debug';
+        desktopDebug.style.cssText = `
+            position: fixed; top: 10px; right: 10px; z-index: 10000;
+            background: rgba(0,0,0,0.95); color: #00ff00; padding: 15px;
+            font-family: 'Courier New', monospace; font-size: 12px; 
+            border-radius: 8px; max-width: 450px; max-height: 400px; 
+            overflow-y: auto; border: 3px solid #00ff00; 
+            box-shadow: 0 0 20px rgba(0,255,0,0.3);
+            backdrop-filter: blur(5px);
+        `;
+        desktopDebug.innerHTML = '<div style="font-weight: bold; color: #ffff00;">VR Debug Console</div><div>Component initialized</div>';
+        document.body.appendChild(desktopDebug);
+        
+        console.log('🔧 Desktop debug display created and added to DOM');
     },
     
     createDebugDisplay: function() {
+        console.log('🔧 Creating VR debug display...');
+        
+        // 既存のデバッグエンティティを削除
+        if (this.debugEntity) {
+            this.debugEntity.remove();
+        }
+        
         // VR内で見えるデバッグテキストエンティティを作成
         this.debugEntity = document.createElement('a-entity');
-        // カメラの前方、やや上に配置
-        this.debugEntity.setAttribute('position', '0 2.5 -1.5');
-        this.debugEntity.setAttribute('rotation', '0 0 0');
+        this.debugEntity.id = 'vr-debug-display';
+        
+        // カメラの右側に配置
+        this.debugEntity.setAttribute('position', '1.5 1.8 -2');
+        this.debugEntity.setAttribute('rotation', '0 -15 0');
+        
+        // テキスト設定
         this.debugEntity.setAttribute('text', {
             value: 'VR Debug Console\nWaiting for events...',
             color: '#00ff00',
-            align: 'center',
-            width: 8,
-            wrapCount: 40
+            align: 'left',
+            width: 6,
+            wrapCount: 35,
+            font: 'monoid'
         });
-        // 背景を追加して見やすくする
+        
+        // 背景パネル
         this.debugEntity.setAttribute('geometry', {
             primitive: 'plane',
-            width: 3,
-            height: 2
+            width: 2.5,
+            height: 1.8
         });
         this.debugEntity.setAttribute('material', {
             color: '#000000',
-            opacity: 0.8,
-            transparent: true
+            opacity: 0.85,
+            transparent: true,
+            side: 'double'
         });
         
-        // カメラリグに追加してカメラと一緒に動くようにする
+        // カメラリグまたはシーンに追加
         const cameraRig = document.getElementById('rig');
+        const camera = document.getElementById('camera');
+        
         if (cameraRig) {
             cameraRig.appendChild(this.debugEntity);
+            console.log('🔧 Debug display added to camera rig');
+        } else if (camera) {
+            camera.appendChild(this.debugEntity);
+            console.log('🔧 Debug display added to camera');
         } else {
             document.querySelector('a-scene').appendChild(this.debugEntity);
+            console.log('🔧 Debug display added to scene');
         }
         
-        this.debugMessages = ['VR Debug Console', 'Component initialized'];
-        this.addDebugMessage('Debug display created');
+        this.addDebugMessage('VR debug display created');
     },
     
     addDebugMessage: function(message) {
         const timestamp = new Date().toLocaleTimeString();
         const fullMessage = `${timestamp}: ${message}`;
+        
+        if (!this.debugMessages) {
+            this.debugMessages = [];
+        }
+        
         this.debugMessages.push(fullMessage);
         
-        // 最新の10メッセージのみ保持
-        if (this.debugMessages.length > 10) {
+        // 最新の12メッセージのみ保持
+        if (this.debugMessages.length > 12) {
             this.debugMessages.shift();
         }
         
         // VR内のテキストを更新
         if (this.debugEntity) {
-            this.debugEntity.setAttribute('text', 'value', this.debugMessages.join('\n'));
+            const displayText = ['VR Debug Console', '─'.repeat(20), ...this.debugMessages.slice(-10)].join('\n');
+            this.debugEntity.setAttribute('text', 'value', displayText);
         }
         
-        // デスクトップ用のデバッグ表示も更新
+        // デスクトップ用のデバッグ表示を更新
         let desktopDebug = document.getElementById('desktop-debug');
-        if (!desktopDebug) {
-            desktopDebug = document.createElement('div');
-            desktopDebug.id = 'desktop-debug';
-            desktopDebug.style.cssText = `
-                position: fixed; top: 10px; right: 10px; z-index: 1000;
-                background: rgba(0,0,0,0.8); color: #00ff00; padding: 10px;
-                font-family: monospace; font-size: 12px; border-radius: 5px;
-                max-width: 300px; max-height: 300px; overflow-y: auto;
-            `;
-            document.body.appendChild(desktopDebug);
+        if (desktopDebug) {
+            const htmlContent = [
+                '<div style="font-weight: bold; color: #ffff00; margin-bottom: 5px;">VR Debug Console</div>',
+                '<div style="border-bottom: 1px solid #00ff00; margin-bottom: 5px;"></div>',
+                ...this.debugMessages.map(msg => `<div>${msg}</div>`)
+            ].join('');
+            desktopDebug.innerHTML = htmlContent;
+            desktopDebug.scrollTop = desktopDebug.scrollHeight;
         }
-        desktopDebug.innerHTML = this.debugMessages.join('<br>');
         
         console.log(`🔧 VR Debug: ${fullMessage}`);
     },
@@ -223,6 +394,25 @@ AFRAME.registerComponent('vr-zoom', {
         const newZ = Math.min(Math.max(currentScale.z * factor, 0.1), 10);
         this.addDebugMessage(`Scale: ${currentScale.x.toFixed(2)} → ${newX.toFixed(2)}`);
         this.solarSystem.setAttribute('scale', `${newX} ${newY} ${newZ}`);
+    },
+    
+    remove: function() {
+        // インターバルをクリア
+        if (this.gamepadCheckInterval) {
+            clearInterval(this.gamepadCheckInterval);
+        }
+        
+        // デバッグ表示を削除
+        if (this.debugEntity) {
+            this.debugEntity.remove();
+        }
+        
+        let desktopDebug = document.getElementById('desktop-debug');
+        if (desktopDebug) {
+            desktopDebug.remove();
+        }
+        
+        console.log('🔧 vr-zoom component removed');
     }
 });
 
@@ -486,5 +676,58 @@ AFRAME.registerComponent('stars', {
     
     remove: function() {
         this.el.removeObject3D('stars');
+    }
+});
+
+// Component for debugging all VR controller events
+AFRAME.registerComponent('vr-debug', {
+    init: function() {
+        console.log('🔧 vr-debug component initialized on:', this.el.id || this.el.tagName);
+        
+        this.addDebugMessage = null;
+        
+        // vr-zoomコンポーネントのaddDebugMessage関数を探す
+        setTimeout(() => {
+            const rightController = document.getElementById('right-controller');
+            if (rightController && rightController.components['vr-zoom']) {
+                this.addDebugMessage = rightController.components['vr-zoom'].addDebugMessage.bind(rightController.components['vr-zoom']);
+                this.addDebugMessage(`Left controller debug enabled for ${this.el.id}`);
+            }
+        }, 500);
+        
+        // 左手コントローラーのイベントも監視
+        this.el.addEventListener('controllerconnected', (evt) => {
+            this.logEvent(`Left controller connected: ${evt.detail.name || 'unknown'}`);
+        });
+        
+        this.el.addEventListener('axismove', (evt) => {
+            this.logEvent(`Left axismove: axis[0]=${evt.detail.axis[0]?.toFixed(2)}, axis[1]=${evt.detail.axis[1]?.toFixed(2)}`);
+        });
+        
+        this.el.addEventListener('thumbstickmoved', (evt) => {
+            this.logEvent(`Left thumbstickmoved: x=${evt.detail.x?.toFixed(2)}, y=${evt.detail.y?.toFixed(2)}`);
+        });
+        
+        this.el.addEventListener('buttondown', (evt) => {
+            this.logEvent(`Left buttondown: id=${evt.detail.id}`);
+        });
+        
+        this.el.addEventListener('buttonup', (evt) => {
+            this.logEvent(`Left buttonup: id=${evt.detail.id}`);
+        });
+        
+        // さらに多くのイベント
+        ['triggerdown', 'triggerup', 'gripdown', 'gripup', 'menudown', 'menuup', 'systemdown', 'systemup', 'thumbstickdown', 'thumbstickup'].forEach(eventName => {
+            this.el.addEventListener(eventName, (evt) => {
+                this.logEvent(`Left ${eventName} event triggered`);
+            });
+        });
+    },
+    
+    logEvent: function(message) {
+        console.log(`🔧 Left Controller: ${message}`);
+        if (this.addDebugMessage) {
+            this.addDebugMessage(`L: ${message}`);
+        }
     }
 });
