@@ -78,33 +78,67 @@ AFRAME.registerComponent('planet-motion', {
 // Component for VR zoom controls
 AFRAME.registerComponent('vr-zoom', {
     init: function() {
+        console.log('🔧 vr-zoom component initialized on:', this.el.id || this.el.tagName);
         this.solarSystem = document.getElementById('solar-system');
         this.isVR = false;
         this.lastScale = { x: 1, y: 1, z: 1 };
+        
         // VRモード判定
         this.el.sceneEl.addEventListener('enter-vr', () => {
             this.isVR = true;
+            console.log('🔧 vr-zoom: Entered VR mode');
         });
         this.el.sceneEl.addEventListener('exit-vr', () => {
             this.isVR = false;
+            console.log('🔧 vr-zoom: Exited VR mode');
             if (this.solarSystem) this.solarSystem.setAttribute('scale', '1 1 1');
         });
+        
         // axismoveイベントを監視
         this.el.addEventListener('axismove', (evt) => {
-            if (!this.isVR) return;
+            console.log('🔧 axismove event received:', evt.detail);
+            if (!this.isVR) {
+                console.log('🔧 Not in VR mode, ignoring axismove');
+                return;
+            }
             // evt.detail.axis[1]がジョイスティック前後
             if (evt.detail.axis && evt.detail.axis.length > 1 && Math.abs(evt.detail.axis[1]) > 0.01) {
+                console.log('🔧 Joystick Y axis detected:', evt.detail.axis[1]);
                 const scaleFactor = 1 - (evt.detail.axis[1] * 0.05);
                 this.updateScale(scaleFactor);
             }
         });
+        
+        // コントローラー接続チェック
+        this.el.addEventListener('controllerconnected', (evt) => {
+            console.log('🔧 Controller connected:', evt.detail);
+        });
+        
+        // より多くのイベントを監視してみる
+        this.el.addEventListener('thumbstickmoved', (evt) => {
+            console.log('🔧 thumbstickmoved event:', evt.detail);
+            if (!this.isVR) return;
+            if (evt.detail.y && Math.abs(evt.detail.y) > 0.01) {
+                const scaleFactor = 1 - (evt.detail.y * 0.05);
+                this.updateScale(scaleFactor);
+            }
+        });
+        
+        this.el.addEventListener('trackpadmoved', (evt) => {
+            console.log('🔧 trackpadmoved event:', evt.detail);
+        });
     },
+    
     updateScale: function(factor) {
-        if (!this.solarSystem) return;
+        if (!this.solarSystem) {
+            console.log('🔧 Solar system not found');
+            return;
+        }
         const currentScale = this.solarSystem.getAttribute('scale');
         const newX = Math.min(Math.max(currentScale.x * factor, 0.1), 10);
         const newY = Math.min(Math.max(currentScale.y * factor, 0.1), 10);
         const newZ = Math.min(Math.max(currentScale.z * factor, 0.1), 10);
+        console.log('🔧 Updating scale from', currentScale, 'to', `${newX} ${newY} ${newZ}`);
         this.solarSystem.setAttribute('scale', `${newX} ${newY} ${newZ}`);
     }
 });

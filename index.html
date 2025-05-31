@@ -73,7 +73,7 @@
 </head>
 <body>
     <a-scene xr-mode-ui="XRMode:xr"
-             background="color: #000000"
+             background="color: #555555"
              antialias="true"
              stats="false"
              debug="false"
@@ -81,7 +81,7 @@
         >
                   
         <!-- Solar System Container - AR/VRで太陽系が手前に表示されるように -->
-        <a-entity id="solar-system" position="0 0 -5" ar-scale-adjuster="arScale: 0.5; vrScale: 1.0; arYOffset: 2.0; vrYOffset: 0.0" vr-zoom>
+        <a-entity id="solar-system" position="0 0 -5" ar-scale-adjuster="arScale: 0.5; vrScale: 1.0; arYOffset: 2.0; vrYOffset: 0.0">
             <!-- Sun -->
             <a-sphere position="0 0 0" radius="1" color="#FF5500" material="emissive: #FF5500; emissiveIntensity: 0.7">
                 <a-light type="point" intensity="1.5"></a-light>
@@ -142,7 +142,7 @@
                      wasd-controls="enabled: true">
             </a-camera>
             <!-- 右手コントローラ用エンティティ -->
-            <a-entity id="right-controller" tracked-controls="hand: right"></a-entity>
+            <a-entity id="right-controller" oculus-touch-controls="hand: right" vr-zoom></a-entity>
         </a-entity>
 
         <!-- Lighting -->
