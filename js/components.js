@@ -137,36 +137,41 @@ AFRAME.registerComponent('vr-zoom', {
         this.isVR = false;
         this.lastScale = { x: 1, y: 1, z: 1 };
         this.debugMessages = [];
+        this.controllerSide = this.el.id.includes('left') ? 'L' : 'R'; // 左右を識別
         
-        // 即座にデスクトップデバッグ表示を作成
-        this.createDesktopDebug();
-        this.addDebugMessage('vr-zoom component started');
+        // 即座にデスクトップデバッグ表示を作成 (右手のみ)
+        if (this.controllerSide === 'R') {
+            this.createDesktopDebug();
+        }
+        this.addDebugMessage(`${this.controllerSide} vr-zoom component started`);
         
-        // 少し遅延してVRデバッグ表示を作成
-        setTimeout(() => {
-            this.createDebugDisplay();
-        }, 1000);
+        // 少し遅延してVRデバッグ表示を作成 (右手のみ)
+        if (this.controllerSide === 'R') {
+            setTimeout(() => {
+                this.createDebugDisplay();
+            }, 1000);
+        }
         
         // VRモード判定
         this.el.sceneEl.addEventListener('enter-vr', () => {
             this.isVR = true;
-            this.addDebugMessage('Entered VR mode');
+            this.addDebugMessage(`${this.controllerSide} Entered VR mode`);
         });
         this.el.sceneEl.addEventListener('exit-vr', () => {
             this.isVR = false;
-            this.addDebugMessage('Exited VR mode');
+            this.addDebugMessage(`${this.controllerSide} Exited VR mode`);
             if (this.solarSystem) this.solarSystem.setAttribute('scale', '1 1 1');
         });
         
         // axismoveイベントを監視
         this.el.addEventListener('axismove', (evt) => {
-            this.addDebugMessage(`axismove: axis[0]=${evt.detail.axis[0]?.toFixed(2)}, axis[1]=${evt.detail.axis[1]?.toFixed(2)}`);
+            this.addDebugMessage(`${this.controllerSide} axismove: axis[0]=${evt.detail.axis[0]?.toFixed(2)}, axis[1]=${evt.detail.axis[1]?.toFixed(2)}`);
             if (!this.isVR) {
-                this.addDebugMessage('Not in VR mode, ignoring');
+                this.addDebugMessage(`${this.controllerSide} Not in VR mode, ignoring`);
                 return;
             }
             if (evt.detail.axis && evt.detail.axis.length > 1 && Math.abs(evt.detail.axis[1]) > 0.01) {
-                this.addDebugMessage(`Joystick Y: ${evt.detail.axis[1]}`);
+                this.addDebugMessage(`${this.controllerSide} Joystick Y: ${evt.detail.axis[1]}`);
                 const scaleFactor = 1 - (evt.detail.axis[1] * 0.05);
                 this.updateScale(scaleFactor);
             }
@@ -174,12 +179,12 @@ AFRAME.registerComponent('vr-zoom', {
         
         // コントローラー接続チェック
         this.el.addEventListener('controllerconnected', (evt) => {
-            this.addDebugMessage(`Controller connected: ${evt.detail.name || 'unknown'}`);
+            this.addDebugMessage(`${this.controllerSide} Controller connected: ${evt.detail.name || 'unknown'}`);
         });
         
         // より多くのイベントを監視
         this.el.addEventListener('thumbstickmoved', (evt) => {
-            this.addDebugMessage(`thumbstickmoved: x=${evt.detail.x?.toFixed(2)}, y=${evt.detail.y?.toFixed(2)}`);
+            this.addDebugMessage(`${this.controllerSide} thumbstickmoved: x=${evt.detail.x?.toFixed(2)}, y=${evt.detail.y?.toFixed(2)}`);
             if (!this.isVR) return;
             if (evt.detail.y && Math.abs(evt.detail.y) > 0.01) {
                 const scaleFactor = 1 - (evt.detail.y * 0.05);
@@ -188,19 +193,19 @@ AFRAME.registerComponent('vr-zoom', {
         });
         
         this.el.addEventListener('trackpadmoved', (evt) => {
-            this.addDebugMessage(`trackpadmoved: x=${evt.detail.x?.toFixed(2)}, y=${evt.detail.y?.toFixed(2)}`);
+            this.addDebugMessage(`${this.controllerSide} trackpadmoved: x=${evt.detail.x?.toFixed(2)}, y=${evt.detail.y?.toFixed(2)}`);
         });
         
         // ボタンイベントも監視
         this.el.addEventListener('buttondown', (evt) => {
-            this.addDebugMessage(`buttondown: id=${evt.detail.id}`);
+            this.addDebugMessage(`${this.controllerSide} buttondown: id=${evt.detail.id}`);
         });
         
         this.el.addEventListener('buttonup', (evt) => {
-            this.addDebugMessage(`buttonup: id=${evt.detail.id}`);
+            this.addDebugMessage(`${this.controllerSide} buttonup: id=${evt.detail.id}`);
         });
         
-        console.log('🔧 All event listeners registered');
+        console.log(`🔧 All event listeners registered for ${this.controllerSide} controller`);
         
         // 追加: Generic gamepadイベントも監視
         window.addEventListener('gamepadconnected', (evt) => {
@@ -351,48 +356,58 @@ AFRAME.registerComponent('vr-zoom', {
         const timestamp = new Date().toLocaleTimeString();
         const fullMessage = `${timestamp}: ${message}`;
         
-        if (!this.debugMessages) {
-            this.debugMessages = [];
+        // 右手コントローラーのみがデバッグ表示を管理
+        if (this.controllerSide === 'R') {
+            if (!this.debugMessages) {
+                this.debugMessages = [];
+            }
+            
+            this.debugMessages.push(fullMessage);
+            
+            // 最新の12メッセージのみ保持
+            if (this.debugMessages.length > 12) {
+                this.debugMessages.shift();
+            }
+            
+            // VR内のテキストを更新
+            if (this.debugEntity) {
+                const displayText = ['VR Debug Console', '─'.repeat(20), ...this.debugMessages.slice(-10)].join('\n');
+                this.debugEntity.setAttribute('text', 'value', displayText);
+            }
+            
+            // デスクトップ用のデバッグ表示を更新
+            let desktopDebug = document.getElementById('desktop-debug');
+            if (desktopDebug) {
+                const htmlContent = [
+                    '<div style="font-weight: bold; color: #ffff00; margin-bottom: 5px;">VR Debug Console</div>',
+                    '<div style="border-bottom: 1px solid #00ff00; margin-bottom: 5px;"></div>',
+                    ...this.debugMessages.map(msg => `<div>${msg}</div>`)
+                ].join('');
+                desktopDebug.innerHTML = htmlContent;
+                desktopDebug.scrollTop = desktopDebug.scrollHeight;
+            }
+        } else {
+            // 左手コントローラーのメッセージは右手のデバッグ表示に送信
+            const rightController = document.getElementById('right-controller');
+            if (rightController && rightController.components['vr-zoom']) {
+                rightController.components['vr-zoom'].addDebugMessage(message);
+                return;
+            }
         }
         
-        this.debugMessages.push(fullMessage);
-        
-        // 最新の12メッセージのみ保持
-        if (this.debugMessages.length > 12) {
-            this.debugMessages.shift();
-        }
-        
-        // VR内のテキストを更新
-        if (this.debugEntity) {
-            const displayText = ['VR Debug Console', '─'.repeat(20), ...this.debugMessages.slice(-10)].join('\n');
-            this.debugEntity.setAttribute('text', 'value', displayText);
-        }
-        
-        // デスクトップ用のデバッグ表示を更新
-        let desktopDebug = document.getElementById('desktop-debug');
-        if (desktopDebug) {
-            const htmlContent = [
-                '<div style="font-weight: bold; color: #ffff00; margin-bottom: 5px;">VR Debug Console</div>',
-                '<div style="border-bottom: 1px solid #00ff00; margin-bottom: 5px;"></div>',
-                ...this.debugMessages.map(msg => `<div>${msg}</div>`)
-            ].join('');
-            desktopDebug.innerHTML = htmlContent;
-            desktopDebug.scrollTop = desktopDebug.scrollHeight;
-        }
-        
-        console.log(`🔧 VR Debug: ${fullMessage}`);
+        console.log(`🔧 VR Debug (${this.controllerSide}): ${fullMessage}`);
     },
     
     updateScale: function(factor) {
         if (!this.solarSystem) {
-            this.addDebugMessage('Solar system not found!');
+            this.addDebugMessage(`${this.controllerSide} Solar system not found!`);
             return;
         }
         const currentScale = this.solarSystem.getAttribute('scale');
         const newX = Math.min(Math.max(currentScale.x * factor, 0.1), 10);
         const newY = Math.min(Math.max(currentScale.y * factor, 0.1), 10);
         const newZ = Math.min(Math.max(currentScale.z * factor, 0.1), 10);
-        this.addDebugMessage(`Scale: ${currentScale.x.toFixed(2)} → ${newX.toFixed(2)}`);
+        this.addDebugMessage(`${this.controllerSide} Scale: ${currentScale.x.toFixed(2)} → ${newX.toFixed(2)}`);
         this.solarSystem.setAttribute('scale', `${newX} ${newY} ${newZ}`);
     },
     
