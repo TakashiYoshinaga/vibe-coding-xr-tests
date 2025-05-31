@@ -427,9 +427,9 @@ AFRAME.registerComponent('vr-zoom', {
         if (!this.solarSystem) return;
         
         const currentScale = this.solarSystem.getAttribute('scale');
-        const newX = Math.min(Math.max(currentScale.x * factor, 0.1), 10);
-        const newY = Math.min(Math.max(currentScale.y * factor, 0.1), 10);
-        const newZ = Math.min(Math.max(currentScale.z * factor, 0.1), 10);
+        const newX = Math.min(Math.max(currentScale.x * factor, 0.07), 10);
+        const newY = Math.min(Math.max(currentScale.y * factor, 0.07), 10);
+        const newZ = Math.min(Math.max(currentScale.z * factor, 0.07), 10);
         
         this.solarSystem.setAttribute('scale', `${newX} ${newY} ${newZ}`);
     },
