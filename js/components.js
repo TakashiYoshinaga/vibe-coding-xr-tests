@@ -448,7 +448,9 @@ AFRAME.registerComponent('ar-scale-adjuster', {
         vrScale: { type: 'number', default: 1.0 },   // Scale in VR/normal mode
         arYOffset: { type: 'number', default: 1.0 }, // Y position offset in AR mode (1m higher)
         vrYOffset: { type: 'number', default: 0.0 }, // Y position offset in VR/normal mode
-        defaultPos: { type: 'vec3', default: { x: 0, y: 0, z: -5 } } // Default position to reset to
+        defaultPos: { type: 'vec3', default: { x: 0, y: 0, z: -5 } }, // Default position to reset to (fallback)
+        defaultPosVR: { type: 'vec3', default: { x: 0, y: 0, z: -5 } }, // Default position for VR/desktop mode
+        defaultPosAR: { type: 'vec3', default: { x: 0, y: 0, z: -3 } }  // Default position for AR mode
     },
     
     init: function() {
@@ -457,22 +459,20 @@ AFRAME.registerComponent('ar-scale-adjuster', {
         this.currentScale = this.data.vrScale;
         this.checkDelayTimer = null;
         
-        // Store the default position from schema (fallback to current position)
-        this.defaultPosition = {
-            x: this.data.defaultPos.x,
-            y: this.data.defaultPos.y,
-            z: this.data.defaultPos.z
+        // Store the VR and AR default positions from schema
+        this.defaultPositionVR = {
+            x: this.data.defaultPosVR.x,
+            y: this.data.defaultPosVR.y,
+            z: this.data.defaultPosVR.z
         };
         
-        // If element has a position set, use that as default instead
-        const currentPos = this.el.getAttribute('position');
-        if (currentPos && (currentPos.x !== 0 || currentPos.y !== 0 || currentPos.z !== 0)) {
-            this.defaultPosition = {
-                x: currentPos.x,
-                y: currentPos.y,
-                z: currentPos.z
-            };
-        }
+        this.defaultPositionAR = {
+            x: this.data.defaultPosAR.x,
+            y: this.data.defaultPosAR.y,
+            z: this.data.defaultPosAR.z
+        };
+        
+        // HTMLで明示的に設定された値をそのまま使用
 
         // Bind methods
         this.onEnterXR = this.onEnterXR.bind(this);
@@ -483,8 +483,8 @@ AFRAME.registerComponent('ar-scale-adjuster', {
         this.sceneEl.addEventListener('enter-vr', this.onEnterXR);
         this.sceneEl.addEventListener('exit-vr', this.onExitXR);
 
-        // Initial scale and position
-        this.applyTransform(this.data.vrScale, this.data.vrYOffset);
+        // Initial scale and position (VR/desktop mode)
+        this.applyTransform(this.data.vrScale, this.data.vrYOffset, false);
 
         // URL parameter forcing for testing
         this.checkURLParameters();
@@ -513,19 +513,19 @@ AFRAME.registerComponent('ar-scale-adjuster', {
                     this.currentScale = this.data.arScale;
                     document.body.classList.add('ar-mode');
                     document.body.classList.remove('vr-mode');
-                    this.applyTransform(this.currentScale, this.data.arYOffset);
+                    this.applyTransform(this.currentScale, this.data.arYOffset, true);
                 } else {
                     // VRモード
                     this.currentScale = this.data.vrScale;
                     document.body.classList.add('vr-mode');
                     document.body.classList.remove('ar-mode');
-                    this.applyTransform(this.currentScale, this.data.vrYOffset);
+                    this.applyTransform(this.currentScale, this.data.vrYOffset, false);
                 }
             } else {
-                this.applyTransform(this.data.vrScale, this.data.vrYOffset);
+                this.applyTransform(this.data.vrScale, this.data.vrYOffset, false);
             }
         } else {
-            this.applyTransform(this.data.vrScale, this.data.vrYOffset);
+            this.applyTransform(this.data.vrScale, this.data.vrYOffset, false);
         }
     },
     
@@ -586,7 +586,7 @@ AFRAME.registerComponent('ar-scale-adjuster', {
         const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.get('ar') === 'true' || urlParams.get('passthrough') === 'true') {
             this.currentScale = this.data.arScale;
-            this.applyTransform(this.currentScale, this.data.arYOffset);
+            this.applyTransform(this.currentScale, this.data.arYOffset, true);
             document.body.classList.add('ar-mode');
             document.body.classList.add('url-forced-ar');
         }
@@ -601,7 +601,7 @@ AFRAME.registerComponent('ar-scale-adjuster', {
         
         // Reset to default when exiting XR
         this.currentScale = this.data.vrScale;
-        this.applyTransform(this.currentScale, this.data.vrYOffset);
+        this.applyTransform(this.currentScale, this.data.vrYOffset, false);
         
         // Clean up classes
         document.body.classList.remove('ar-mode', 'vr-mode', 'url-forced-ar');
@@ -615,15 +615,18 @@ AFRAME.registerComponent('ar-scale-adjuster', {
         }
     },
     
-    applyTransform: function(scale, yOffset) {
+    applyTransform: function(scale, yOffset, isAR) {
         // Apply scale
         this.el.setAttribute('scale', scale + ' ' + scale + ' ' + scale);
         
-        // Apply position with Y offset - always based on defaultPosition
+        // Choose the appropriate default position based on mode
+        const basePosition = isAR ? this.defaultPositionAR : this.defaultPositionVR;
+        
+        // Apply position with Y offset - always based on the appropriate default position
         const newPosition = {
-            x: this.defaultPosition.x,
-            y: this.defaultPosition.y + yOffset,
-            z: this.defaultPosition.z
+            x: basePosition.x,
+            y: basePosition.y + yOffset,
+            z: basePosition.z
         };
         
         this.el.setAttribute('position', newPosition);
