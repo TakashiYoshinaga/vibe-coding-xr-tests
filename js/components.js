@@ -454,13 +454,15 @@ AFRAME.registerComponent('ar-scale-adjuster', {
         arYOffset: { type: 'number', default: 1.0 }, // Y position offset in AR mode (1m higher)
         vrYOffset: { type: 'number', default: 0.0 }  // Y position offset in VR/normal mode
     },
-      init: function() {
+    
+    init: function() {
         // Store references
         this.sceneEl = this.el.sceneEl;
         this.currentScale = this.data.vrScale;
         this.checkDelayTimer = null;
-        this.originalPosition = null; // Will be set on first use
-        this.originalPositionCaptured = false;
+        
+        // Store original position from the element's current position attribute
+        this.originalPosition = this.el.getAttribute('position');
 
         // Bind methods
         this.onEnterXR = this.onEnterXR.bind(this);
@@ -602,28 +604,12 @@ AFRAME.registerComponent('ar-scale-adjuster', {
             scene.object3D.scale.set(1, 1, 1);
         }
     },
+    
     applyTransform: function(scale, yOffset) {
-        // Capture original position on first use to ensure it's the actual element position
-        if (!this.originalPositionCaptured) {
-            const pos = this.el.getAttribute('position');
-            this.originalPosition = {
-                x: pos.x,
-                y: pos.y,
-                z: pos.z
-            };
-            this.originalPositionCaptured = true;
-            
-            // Debug: Show original position capture
-            if (window.DebugManager && window.DebugManager.updateDebugInfo) {
-                window.DebugManager.updateDebugInfo('position-original', 
-                    `Original Pos: ${this.originalPosition.x.toFixed(2)}, ${this.originalPosition.y.toFixed(2)}, ${this.originalPosition.z.toFixed(2)}`);
-            }
-        }
-        
         // Apply scale
         this.el.setAttribute('scale', scale + ' ' + scale + ' ' + scale);
         
-        // Apply position with Y offset using the captured original position
+        // Apply position with Y offset
         const newPosition = {
             x: this.originalPosition.x,
             y: this.originalPosition.y + yOffset,
@@ -631,20 +617,9 @@ AFRAME.registerComponent('ar-scale-adjuster', {
         };
         
         this.el.setAttribute('position', newPosition);
-        
-        // Debug: Show current transformation
-        if (window.DebugManager && window.DebugManager.updateDebugInfo) {
-            window.DebugManager.updateDebugInfo('position-current', 
-                `Current Pos: ${newPosition.x.toFixed(2)}, ${newPosition.y.toFixed(2)}, ${newPosition.z.toFixed(2)} (offset: ${yOffset.toFixed(2)})`);
-        }
     },
-      remove: function() {
-        // Restore original position and scale before cleanup
-        if (this.originalPositionCaptured && this.originalPosition) {
-            this.el.setAttribute('position', this.originalPosition);
-            this.el.setAttribute('scale', '1 1 1');
-        }
-        
+    
+    remove: function() {
         // Clean up
         if (this.checkDelayTimer) {
             clearTimeout(this.checkDelayTimer);
