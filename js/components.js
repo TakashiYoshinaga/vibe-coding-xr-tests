@@ -79,54 +79,48 @@ AFRAME.registerComponent('planet-motion', {
 AFRAME.registerComponent('vr-zoom', {
     init: function() {
         this.scale = { x: 1, y: 1, z: 1 };
-        this.scene = document.querySelector('a-scene');
+        // this.scene = document.querySelector('a-scene');
         this.isVR = false;
-        
+        // 変更: this.elが#solar-systemであることを想定
+        this.target = this.el;
+
         // Handle VR mode changes
-        this.scene.addEventListener('enter-vr', () => {
+        this.el.sceneEl.addEventListener('enter-vr', () => {
             this.isVR = true;
         });
-        
-        this.scene.addEventListener('exit-vr', () => {
+        this.el.sceneEl.addEventListener('exit-vr', () => {
             this.isVR = false;
-            // Reset scene scale when exiting VR
-            this.scene.object3D.scale.set(1, 1, 1);
+            // Reset scale when exiting VR
+            this.target.setAttribute('scale', '1 1 1');
         });
-        
+
         // For Oculus/Meta Quest controllers
         this.el.sceneEl.addEventListener('thumbstickmoved', (evt) => {
             if (!this.isVR) return;
-            
-            // Check if it's the right joystick (index 1)
-            if (evt.detail.y !== 0 && evt.detail.controller.id === 1) {
+            // evt.detail.y: 前後方向
+            if (typeof evt.detail.y === 'number' && Math.abs(evt.detail.y) > 0.01) {
                 const scaleFactor = 1 - (evt.detail.y * 0.05);
                 this.updateScale(scaleFactor);
             }
         });
-
         // Alternative for older versions of A-Frame
         this.el.sceneEl.addEventListener('axismove', (evt) => {
             if (!this.isVR) return;
-            
-            // Check if it's the right joystick Y-axis
-            if (evt.detail.axis[1] !== 0 && evt.detail.axis.length > 1) {
+            if (evt.detail.axis && evt.detail.axis.length > 1 && Math.abs(evt.detail.axis[1]) > 0.01) {
                 const scaleFactor = 1 - (evt.detail.axis[1] * 0.05);
                 this.updateScale(scaleFactor);
             }
         });
     },
-    
     updateScale: function(factor) {
-        // Get the scene's current scale
-        const currentScale = this.scene.object3D.scale;
-        
+        // Get the current scale of the solar system
+        const currentScale = this.target.getAttribute('scale');
         // Calculate new scale (clamped between 0.1 and 10)
         const newX = Math.min(Math.max(currentScale.x * factor, 0.1), 10);
         const newY = Math.min(Math.max(currentScale.y * factor, 0.1), 10);
         const newZ = Math.min(Math.max(currentScale.z * factor, 0.1), 10);
-        
-        // Apply the new scale to the scene
-        this.scene.object3D.scale.set(newX, newY, newZ);
+        // Apply the new scale to the solar system
+        this.target.setAttribute('scale', `${newX} ${newY} ${newZ}`);
     }
 });
 
