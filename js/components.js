@@ -152,7 +152,7 @@ class SolarSystemViewer {
     
     createScene() {
         this.scene = new THREE.Scene();
-        this.scene.background = new THREE.Color(0x000000);
+        this.scene.background = new THREE.Color(0x444444);
         
         // スケール用グループ
         this.scaleGroup = new THREE.Group();
@@ -470,12 +470,14 @@ class SolarSystemViewer {
         console.log('ARモード開始 - サイズを0.3倍に縮小');
         this.setSystemScale(this.arScale);
         this.positionSolarSystemForAR();
+        this.updateControllerAppearance();
     }
     
     onVRStart() {
         console.log('VRモード開始 - デフォルトサイズ');
         this.setSystemScale(this.vrScale);
         this.positionSolarSystemForVR();
+        this.updateControllerAppearance();
     }
     
     onXREnd() {
@@ -553,19 +555,51 @@ class SolarSystemViewer {
     }
     
     createControllerLights() {
-        // コントローラー1用ライト
-        const controllerLight1 = new THREE.PointLight(0xffffff, 0.5, 5);
-        this.controllerGrip1.add(controllerLight1);
-        this.controllerLights.push(controllerLight1);
+        // コントローラーライトを削除
+        // 代わりにコントローラーモデル自体を発光マテリアルで見やすくする
         
-        // コントローラー2用ライト
-        const controllerLight2 = new THREE.PointLight(0xffffff, 0.5, 5);
-        this.controllerGrip2.add(controllerLight2);
-        this.controllerLights.push(controllerLight2);
+        // コントローラー1のモデルを発光させる
+        this.controllerGrip1.traverse((child) => {
+            if (child.isMesh && child.material) {
+                child.material = child.material.clone();
+                child.material.emissive = new THREE.Color(0x333333);
+                child.material.emissiveIntensity = 0.2;
+            }
+        });
+        
+        // コントローラー2のモデルを発光させる
+        this.controllerGrip2.traverse((child) => {
+            if (child.isMesh && child.material) {
+                child.material = child.material.clone();
+                child.material.emissive = new THREE.Color(0x333333);
+                child.material.emissiveIntensity = 0.2;
+            }
+        });
+    }
+    
+    updateControllerAppearance() {
+        // XRセッション開始後にコントローラーモデルの外観を更新
+        setTimeout(() => {
+            this.controllerGrip1.traverse((child) => {
+                if (child.isMesh && child.material) {
+                    child.material = child.material.clone();
+                    child.material.emissive = new THREE.Color(0x333333);
+                    child.material.emissiveIntensity = 0.3;
+                }
+            });
+            
+            this.controllerGrip2.traverse((child) => {
+                if (child.isMesh && child.material) {
+                    child.material = child.material.clone();
+                    child.material.emissive = new THREE.Color(0x333333);
+                    child.material.emissiveIntensity = 0.3;
+                }
+            });
+        }, 1000); // 1秒後に実行
     }
     
     createVisualFeedback() {
-        // コントローラー1用フィードバック球体
+        // コントローラー1用フィードバック球体（発光マテリアル）
         const feedbackGeometry1 = new THREE.SphereGeometry(0.02, 8, 8);
         const feedbackMaterial1 = new THREE.MeshBasicMaterial({ 
             color: 0x00ff00,
@@ -577,7 +611,7 @@ class SolarSystemViewer {
         this.controller1.add(feedbackSphere1);
         this.feedbackSpheres.push(feedbackSphere1);
         
-        // コントローラー2用フィードバック球体
+        // コントローラー2用フィードバック球体（発光マテリアル）
         const feedbackGeometry2 = new THREE.SphereGeometry(0.02, 8, 8);
         const feedbackMaterial2 = new THREE.MeshBasicMaterial({ 
             color: 0x00ff00,
