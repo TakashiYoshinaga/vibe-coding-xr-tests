@@ -200,7 +200,7 @@ class SolarSystemViewer {
     
     createLights() {
         // 太陽光（ポイントライト）
-        this.sunLight = new THREE.PointLight(0xffffff, 1000, 1000);
+        this.sunLight = new THREE.PointLight(0xffffff, 2, 20);
         this.sunLight.position.set(0, 0, 0);
         this.sunLight.castShadow = true;
         this.sunLight.shadow.mapSize.width = 2048;
@@ -208,7 +208,7 @@ class SolarSystemViewer {
         this.scaleGroup.add(this.sunLight);
         
         // 環境光（全体を少し明るく）
-        const ambientLight = new THREE.AmbientLight(0x404040, 2.0);
+        const ambientLight = new THREE.AmbientLight(0x404040, 1.0);
         this.scene.add(ambientLight);
     }
     
