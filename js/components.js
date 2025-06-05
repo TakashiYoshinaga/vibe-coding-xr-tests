@@ -32,10 +32,10 @@ class SolarSystemViewer {
         // スケーリング
         this.scaleGroup = null;
         this.currentScale = 1;
-        this.minScale = 0.08;
+        this.minScale = 0.01;
         this.maxScale = 10;
         this.baseScale = 1;
-        this.arScale = 0.15; // ARモード用スケール
+        this.arScale = 0.08; // ARモード用スケール
         
         this.planetData = this.getPlanetData();
         this.init();
@@ -141,7 +141,7 @@ class SolarSystemViewer {
     
     createScene() {
         this.scene = new THREE.Scene();
-        this.scene.background = new THREE.Color(0x222222);
+        this.scene.background = new THREE.Color(0x000000);
         
         // スケール用グループ
         this.scaleGroup = new THREE.Group();
@@ -475,13 +475,13 @@ class SolarSystemViewer {
     
     positionSolarSystemForAR() {
         // XRモード時：視点から少し手前、少し上に配置
-        this.scaleGroup.position.set(0, 1.5, -2); // 目の高さより少し上、2m手前
+        this.scaleGroup.position.set(0, 0.8, -1); // 目の高さより少し上、2m手前
         console.log('太陽系位置をXRモード用に調整');
     }
     
     positionSolarSystemForVR() {
         // XRモード時：視点から少し手前、少し上に配置
-        this.scaleGroup.position.set(0, 1.5, -10); // 目の高さより少し上、2m手前
+        this.scaleGroup.position.set(0, 0.8, -10); // 目の高さより少し上、2m手前
         console.log('太陽系位置をXRモード用に調整');
     }
     
