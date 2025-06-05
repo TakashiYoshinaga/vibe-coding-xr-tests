@@ -152,7 +152,7 @@ class SolarSystemViewer {
     
     createScene() {
         this.scene = new THREE.Scene();
-        this.scene.background = new THREE.Color(0x222222);
+        this.scene.background = new THREE.Color(0x000000);
         
         // スケール用グループ
         this.scaleGroup = new THREE.Group();
@@ -667,7 +667,7 @@ class SolarSystemViewer {
         if (this.isDragging && event.target === this.dragController) {
             this.isDragging = false;
             this.dragController = null;
-            console.log('太陽のドラッグ終了');
+            this.showFeedback('ドラッグ終了', 0x00ff00);
         }
     }
     
@@ -690,9 +690,7 @@ class SolarSystemViewer {
             }
         });
         
-        console.log('Checking intersections with', allObjects.length, 'objects');
         const intersections = raycaster.intersectObjects(allObjects);
-        console.log('Found intersections:', intersections.map(i => i.object.userData?.type || 'unknown'));
         
         return intersections;
     }
