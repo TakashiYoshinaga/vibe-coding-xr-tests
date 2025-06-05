@@ -22,6 +22,7 @@ class SolarSystemViewer {
         this.sun = null;
         this.planets = [];
         this.orbits = [];
+        this.moon = null;
         
         // アニメーション
         this.clock = new THREE.Clock();
@@ -32,6 +33,8 @@ class SolarSystemViewer {
         this.currentScale = 1;
         this.minScale = 0.1;
         this.maxScale = 10;
+        this.baseScale = 1;
+        this.arScale = 0.3;
         
         this.planetData = this.getPlanetData();
         this.init();
@@ -211,6 +214,7 @@ class SolarSystemViewer {
         this.createSun();
         this.createPlanets();
         this.createOrbits();
+        this.createMoon();
     }
     
     createSun() {
@@ -263,6 +267,11 @@ class SolarSystemViewer {
         
         this.planets.push(orbitGroup);
         this.scaleGroup.add(orbitGroup);
+        
+        // 土星の場合はリングを追加
+        if (data.name === '土星') {
+            this.createSaturnRings(planetGroup);
+        }
     }
     
     createOrbits() {
@@ -302,6 +311,82 @@ class SolarSystemViewer {
         this.scaleGroup.add(orbitLine);
     }
     
+    createMoon() {
+        // 地球を見つける
+        const earthOrbitGroup = this.planets.find(planet => 
+            planet.userData.data.name === '地球'
+        );
+        
+        if (earthOrbitGroup) {
+            // 月の作成
+            const moonGeometry = new THREE.SphereGeometry(0.27, 8, 8);
+            const moonMaterial = new THREE.MeshLambertMaterial({ color: 0xcccccc });
+            const moon = new THREE.Mesh(moonGeometry, moonMaterial);
+            
+            moon.castShadow = true;
+            moon.receiveShadow = true;
+            
+            // 月の軌道グループ
+            const moonOrbitGroup = new THREE.Group();
+            moonOrbitGroup.add(moon);
+            
+            // 月の初期位置（地球から距離3.84）
+            moon.position.x = 3.84;
+            
+            // 月を地球の惑星グループに追加
+            earthOrbitGroup.userData.planetGroup.add(moonOrbitGroup);
+            
+            // 月のアニメーションデータ
+            moonOrbitGroup.userData = {
+                moon: moon,
+                orbitAngle: 0,
+                orbitalSpeed: (2 * Math.PI) / (27.3 * this.timeScale * 0.01), // 月の公転周期27.3日
+                rotationSpeed: (2 * Math.PI) / (27.3 * this.timeScale) // 月の自転周期（潮汐固定）
+            };
+              this.moon = moonOrbitGroup;
+        }
+    }
+    
+    createSaturnRings(saturnGroup) {
+        // 土星のリング作成
+        const ringInnerRadius = 2.8; // 土星の半径より少し大きく
+        const ringOuterRadius = 4.2;
+        const ringSegments = 64;
+        
+        const ringGeometry = new THREE.RingGeometry(ringInnerRadius, ringOuterRadius, ringSegments);
+        const ringMaterial = new THREE.MeshLambertMaterial({ 
+            color: 0xccaa88,
+            transparent: true,
+            opacity: 0.8,
+            side: THREE.DoubleSide
+        });
+        
+        const rings = new THREE.Mesh(ringGeometry, ringMaterial);
+        
+        // リングを水平に配置
+        rings.rotation.x = Math.PI / 2;
+        
+        rings.castShadow = true;
+        rings.receiveShadow = true;
+        
+        saturnGroup.add(rings);
+        
+        // 追加のリング層
+        const ring2Geometry = new THREE.RingGeometry(ringInnerRadius + 0.3, ringOuterRadius - 0.3, ringSegments);
+        const ring2Material = new THREE.MeshLambertMaterial({ 
+            color: 0xddbb99,
+            transparent: true,
+            opacity: 0.6,
+            side: THREE.DoubleSide
+        });
+        
+        const rings2 = new THREE.Mesh(ring2Geometry, ring2Material);
+        rings2.rotation.x = Math.PI / 2;
+        rings2.position.y = 0.01; // 少しずらして重ねる
+        
+        saturnGroup.add(rings2);
+    }
+    
     setupXR() {
         // ARボタン
         const arButton = document.getElementById('arButton');
@@ -316,6 +401,7 @@ class SolarSystemViewer {
                                 requiredFeatures: ['local-floor']
                             }).then((session) => {
                                 this.renderer.xr.setSession(session);
+                                this.onARStart();
                             });
                         } else {
                             alert('ARモードはサポートされていません');
@@ -340,6 +426,7 @@ class SolarSystemViewer {
                                 requiredFeatures: ['local-floor']
                             }).then((session) => {
                                 this.renderer.xr.setSession(session);
+                                this.onVRStart();
                             });
                         } else {
                             alert('VRモードはサポートされていません');
@@ -352,6 +439,38 @@ class SolarSystemViewer {
         }
         
         this.setupControllers();
+        this.setupSessionEvents();
+    }
+    
+    setupSessionEvents() {
+        // XRセッション終了時のイベントリスナー
+        this.renderer.xr.addEventListener('sessionstart', () => {
+            // セッション開始時の処理は各モードの開始メソッドで行う
+        });
+        
+        this.renderer.xr.addEventListener('sessionend', () => {
+            this.onXREnd();
+        });
+    }
+    
+    onARStart() {
+        console.log('ARモード開始 - サイズを0.3倍に縮小');
+        this.setSystemScale(this.arScale);
+    }
+    
+    onVRStart() {
+        console.log('VRモード開始 - デフォルトサイズ');
+        this.setSystemScale(this.baseScale);
+    }
+    
+    onXREnd() {
+        console.log('XRモード終了 - デフォルトサイズ');
+        this.setSystemScale(this.baseScale);
+    }
+    
+    setSystemScale(scale) {
+        this.currentScale = scale;
+        this.scaleGroup.scale.setScalar(scale);
     }
     
     setupControllers() {
@@ -486,6 +605,22 @@ class SolarSystemViewer {
                 console.log(`${data.name}: angle=${angle.toFixed(2)}, x=${userData.planetGroup.position.x.toFixed(2)}, z=${userData.planetGroup.position.z.toFixed(2)}`);
             }
         });
+        
+        // 月のアニメーション
+        if (this.moon) {
+            const moonUserData = this.moon.userData;
+            
+            // 月の自転
+            moonUserData.moon.rotation.y += moonUserData.rotationSpeed * deltaTime;
+            
+            // 月の公転
+            moonUserData.orbitAngle += moonUserData.orbitalSpeed * deltaTime;
+            
+            // 月の位置計算
+            const moonDistance = 3.84;
+            moonUserData.moon.position.x = moonDistance * Math.cos(moonUserData.orbitAngle);
+            moonUserData.moon.position.z = moonDistance * Math.sin(moonUserData.orbitAngle);
+        }
         
         // OrbitControls更新（非XRモード時のみ）
         if (!this.renderer.xr.isPresenting && this.controls) {
