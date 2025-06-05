@@ -24,6 +24,9 @@ class SolarSystemViewer {
         this.dragController = null;
         this.dragOffset = new THREE.Vector3();
         
+        // 接触ポイント表示
+        this.contactPoints = [];
+        
         
         // 太陽系オブジェクト
         this.sun = null;
@@ -547,6 +550,9 @@ class SolarSystemViewer {
         // コントローラー専用ライト
         this.createControllerLights();
         
+        // 接触ポイント表示
+        this.createContactPoints();
+        
     }
     
     createControllerLights() {
@@ -591,6 +597,32 @@ class SolarSystemViewer {
                 }
             });
         }, 1000); // 1秒後に実行
+    }
+    
+    createContactPoints() {
+        // コントローラー1用接触ポイント球体
+        const contactGeometry1 = new THREE.SphereGeometry(0.01, 8, 8);
+        const contactMaterial1 = new THREE.MeshBasicMaterial({ 
+            color: 0x888888,
+            transparent: true,
+            opacity: 0.7
+        });
+        const contactPoint1 = new THREE.Mesh(contactGeometry1, contactMaterial1);
+        contactPoint1.position.set(0, 0, -0.05); // コントローラーの先端
+        this.controller1.add(contactPoint1);
+        this.contactPoints.push(contactPoint1);
+        
+        // コントローラー2用接触ポイント球体
+        const contactGeometry2 = new THREE.SphereGeometry(0.01, 8, 8);
+        const contactMaterial2 = new THREE.MeshBasicMaterial({ 
+            color: 0x888888,
+            transparent: true,
+            opacity: 0.7
+        });
+        const contactPoint2 = new THREE.Mesh(contactGeometry2, contactMaterial2);
+        contactPoint2.position.set(0, 0, -0.05);
+        this.controller2.add(contactPoint2);
+        this.contactPoints.push(contactPoint2);
     }
     
     
@@ -641,7 +673,7 @@ class SolarSystemViewer {
         raycaster.ray.direction.set(0, 0, -1).applyMatrix4(tempMatrix);
         
         // レイキャスターの範囲を設定
-        raycaster.far = 2; // 2mに縮小
+        raycaster.far = 5; // 5mに縮小
         
         // 太陽系全体をチェック（デバッグ用）
         const allObjects = [];
@@ -696,6 +728,33 @@ class SolarSystemViewer {
         }
     }
     
+    updateContactPoints() {
+        if (!this.renderer.xr.isPresenting) return;
+        
+        // 各コントローラーの接触判定
+        [this.controller1, this.controller2].forEach((controller, index) => {
+            if (controller && this.contactPoints[index]) {
+                const intersections = this.getIntersections(controller);
+                const contactPoint = this.contactPoints[index];
+                
+                // 太陽との接触チェック
+                const sunContact = intersections.some(intersection => 
+                    intersection.object === this.sun
+                );
+                
+                if (sunContact) {
+                    // 太陽に接触している場合は赤色
+                    contactPoint.material.color.setHex(0xff4444);
+                    contactPoint.material.opacity = 1.0;
+                } else {
+                    // 接触していない場合はグレー
+                    contactPoint.material.color.setHex(0x888888);
+                    contactPoint.material.opacity = 0.7;
+                }
+            }
+        });
+    }
+    
     updateScale(delta) {
         this.currentScale = THREE.MathUtils.clamp(
             this.currentScale + delta,
@@ -745,6 +804,9 @@ class SolarSystemViewer {
         
         // ドラッグ処理
         this.handleDragging();
+        
+        // 接触判定処理
+        this.updateContactPoints();
         
         // 太陽の自転
         if (this.sun) {
