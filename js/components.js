@@ -17,6 +17,12 @@ class SolarSystemViewer {
         this.controller2 = null;
         this.controllerGrip1 = null;
         this.controllerGrip2 = null;
+        this.controllerLights = [];
+        
+        // インタラクション
+        this.isDragging = false;
+        this.dragController = null;
+        this.dragOffset = new THREE.Vector3();
         
         // 太陽系オブジェクト
         this.sun = null;
@@ -142,7 +148,7 @@ class SolarSystemViewer {
     
     createScene() {
         this.scene = new THREE.Scene();
-        this.scene.background = new THREE.Color(0x000000);
+        this.scene.background = new THREE.Color(0x222222);
         
         // スケール用グループ
         this.scaleGroup = new THREE.Group();
@@ -534,14 +540,76 @@ class SolarSystemViewer {
         this.controllerGrip2 = this.renderer.xr.getControllerGrip(1);
         this.controllerGrip2.add(controllerModelFactory.createControllerModel(this.controllerGrip2));
         this.scene.add(this.controllerGrip2);
+        
+        // コントローラー専用ライト
+        this.createControllerLights();
+    }
+    
+    createControllerLights() {
+        // コントローラー1用ライト
+        const controllerLight1 = new THREE.PointLight(0xffffff, 0.5, 5);
+        this.controllerGrip1.add(controllerLight1);
+        this.controllerLights.push(controllerLight1);
+        
+        // コントローラー2用ライト
+        const controllerLight2 = new THREE.PointLight(0xffffff, 0.5, 5);
+        this.controllerGrip2.add(controllerLight2);
+        this.controllerLights.push(controllerLight2);
     }
     
     onSelectStart(event) {
-        // コントローラーの選択開始
+        const controller = event.target;
+        
+        // ARモード時のみ太陽のドラッグを許可
+        if (this.isARMode() && this.sun) {
+            const intersections = this.getIntersections(controller);
+            
+            if (intersections.length > 0) {
+                const intersected = intersections[0].object;
+                
+                // 太陽を選択した場合
+                if (intersected === this.sun) {
+                    this.isDragging = true;
+                    this.dragController = controller;
+                    
+                    // ドラッグ開始時のオフセットを計算
+                    const controllerPosition = new THREE.Vector3();
+                    controller.getWorldPosition(controllerPosition);
+                    
+                    const sunPosition = new THREE.Vector3();
+                    this.scaleGroup.getWorldPosition(sunPosition);
+                    
+                    this.dragOffset.copy(sunPosition).sub(controllerPosition);
+                    
+                    console.log('太陽のドラッグ開始');
+                }
+            }
+        }
     }
     
     onSelectEnd(event) {
-        // コントローラーの選択終了
+        if (this.isDragging && event.target === this.dragController) {
+            this.isDragging = false;
+            this.dragController = null;
+            console.log('太陽のドラッグ終了');
+        }
+    }
+    
+    getIntersections(controller) {
+        const tempMatrix = new THREE.Matrix4();
+        tempMatrix.identity().extractRotation(controller.matrixWorld);
+        
+        const raycaster = new THREE.Raycaster();
+        raycaster.ray.origin.setFromMatrixPosition(controller.matrixWorld);
+        raycaster.ray.direction.set(0, 0, -1).applyMatrix4(tempMatrix);
+        
+        // 太陽のみをチェック
+        return raycaster.intersectObjects([this.sun]);
+    }
+    
+    isARMode() {
+        const session = this.renderer.xr.getSession();
+        return session && session.mode === 'immersive-ar';
     }
     
     handleControllerInput() {
@@ -558,13 +626,24 @@ class SolarSystemViewer {
                         if (gamepad.axes.length >= 2) {
                             const yAxis = gamepad.axes[3] || gamepad.axes[1]; // 右スティックまたは左スティック
                             if (Math.abs(yAxis) > 0.1) {
-                                const scaleChange = yAxis * 0.01;
+                                const scaleChange = yAxis * 0.005;
                                 this.updateScale(-scaleChange); // 上で拡大、下で縮小
                             }
                         }
                     }
                 });
             }
+        }
+    }
+    
+    handleDragging() {
+        if (this.isDragging && this.dragController) {
+            const controllerPosition = new THREE.Vector3();
+            this.dragController.getWorldPosition(controllerPosition);
+            
+            // コントローラー位置 + オフセットを新しい太陽系位置とする
+            const newPosition = controllerPosition.clone().add(this.dragOffset);
+            this.scaleGroup.position.copy(newPosition);
         }
     }
     
@@ -614,6 +693,9 @@ class SolarSystemViewer {
         
         // コントローラー入力処理
         this.handleControllerInput();
+        
+        // ドラッグ処理
+        this.handleDragging();
         
         // 太陽の自転
         if (this.sun) {
