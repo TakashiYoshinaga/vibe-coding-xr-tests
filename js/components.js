@@ -23,6 +23,7 @@ class SolarSystemViewer {
         this.planets = [];
         this.orbits = [];
         this.moon = null;
+        this.sunLight = null;
         
         // アニメーション
         this.clock = new THREE.Clock();
@@ -134,6 +135,7 @@ class SolarSystemViewer {
         this.createSolarSystem();
         this.setupXR();
         this.setupEventListeners();
+        this.adjustLightingForScale(this.currentScale); // 初期ライティング設定
         this.animate();
     }
     
@@ -198,12 +200,12 @@ class SolarSystemViewer {
     
     createLights() {
         // 太陽光（ポイントライト）
-        const sunLight = new THREE.PointLight(0xffffff, 1000, 1000);
-        sunLight.position.set(0, 0, 0);
-        sunLight.castShadow = true;
-        sunLight.shadow.mapSize.width = 2048;
-        sunLight.shadow.mapSize.height = 2048;
-        this.scaleGroup.add(sunLight);
+        this.sunLight = new THREE.PointLight(0xffffff, 1000, 1000);
+        this.sunLight.position.set(0, 0, 0);
+        this.sunLight.castShadow = true;
+        this.sunLight.shadow.mapSize.width = 2048;
+        this.sunLight.shadow.mapSize.height = 2048;
+        this.scaleGroup.add(this.sunLight);
         
         // 環境光（全体を少し明るく）
         const ambientLight = new THREE.AmbientLight(0x404040, 2.0);
@@ -471,6 +473,21 @@ class SolarSystemViewer {
     setSystemScale(scale) {
         this.currentScale = scale;
         this.scaleGroup.scale.setScalar(scale);
+        this.adjustLightingForScale(scale);
+    }
+    
+    adjustLightingForScale(scale) {
+        if (this.sunLight) {
+            // スケールが小さくなるほど光の強度を下げて、距離を調整
+            const baseIntensity = 1000;
+            const baseDistance = 1000;
+            
+            // スケールに応じて強度と距離を調整
+            this.sunLight.intensity = baseIntensity * (scale * scale); // 距離の二乗に比例
+            this.sunLight.distance = baseDistance * scale;
+            
+            console.log(`ライト調整: scale=${scale}, intensity=${this.sunLight.intensity}, distance=${this.sunLight.distance}`);
+        }
     }
     
     setupControllers() {
@@ -536,6 +553,7 @@ class SolarSystemViewer {
             this.maxScale
         );
         this.scaleGroup.scale.setScalar(this.currentScale);
+        this.adjustLightingForScale(this.currentScale);
     }
     
     setupEventListeners() {
