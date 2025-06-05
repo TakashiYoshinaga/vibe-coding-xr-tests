@@ -303,7 +303,7 @@ class SolarSystemViewer {
         
         const orbitGeometry = new THREE.BufferGeometry().setFromPoints(points);
         const orbitMaterial = new THREE.LineBasicMaterial({ 
-            color: 0x444444,
+            color: 0xAAAAAA,
             transparent: true,
             opacity: 0.3
         });
