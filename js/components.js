@@ -673,7 +673,7 @@ class SolarSystemViewer {
         raycaster.ray.direction.set(0, 0, -1).applyMatrix4(tempMatrix);
         
         // レイキャスターの範囲を設定
-        raycaster.far = 5; // 5mに縮小
+        raycaster.far = 0.3; // 5mに縮小
         
         // 太陽系全体をチェック（デバッグ用）
         const allObjects = [];
