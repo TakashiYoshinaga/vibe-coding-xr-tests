@@ -24,6 +24,10 @@ class SolarSystemViewer {
         this.dragController = null;
         this.dragOffset = new THREE.Vector3();
         
+        // ビジュアルフィードバック
+        this.feedbackSpheres = [];
+        this.debugText = null;
+        
         // 太陽系オブジェクト
         this.sun = null;
         this.planets = [];
@@ -543,6 +547,9 @@ class SolarSystemViewer {
         
         // コントローラー専用ライト
         this.createControllerLights();
+        
+        // ビジュアルフィードバック
+        this.createVisualFeedback();
     }
     
     createControllerLights() {
@@ -557,11 +564,63 @@ class SolarSystemViewer {
         this.controllerLights.push(controllerLight2);
     }
     
+    createVisualFeedback() {
+        // コントローラー1用フィードバック球体
+        const feedbackGeometry1 = new THREE.SphereGeometry(0.02, 8, 8);
+        const feedbackMaterial1 = new THREE.MeshBasicMaterial({ 
+            color: 0x00ff00,
+            transparent: true,
+            opacity: 0.8
+        });
+        const feedbackSphere1 = new THREE.Mesh(feedbackGeometry1, feedbackMaterial1);
+        feedbackSphere1.position.set(0, 0, -0.1); // コントローラーの少し前
+        this.controller1.add(feedbackSphere1);
+        this.feedbackSpheres.push(feedbackSphere1);
+        
+        // コントローラー2用フィードバック球体
+        const feedbackGeometry2 = new THREE.SphereGeometry(0.02, 8, 8);
+        const feedbackMaterial2 = new THREE.MeshBasicMaterial({ 
+            color: 0x00ff00,
+            transparent: true,
+            opacity: 0.8
+        });
+        const feedbackSphere2 = new THREE.Mesh(feedbackGeometry2, feedbackMaterial2);
+        feedbackSphere2.position.set(0, 0, -0.1);
+        this.controller2.add(feedbackSphere2);
+        this.feedbackSpheres.push(feedbackSphere2);
+    }
+    
+    showFeedback(message, color = 0x00ff00) {
+        console.log(message); // 従来のログも残す
+        
+        // フィードバック球体の色変更
+        this.feedbackSpheres.forEach(sphere => {
+            sphere.material.color.setHex(color);
+            sphere.material.opacity = 1.0;
+            
+            // 0.5秒後に元に戻す
+            setTimeout(() => {
+                sphere.material.color.setHex(0x00ff00);
+                sphere.material.opacity = 0.8;
+            }, 500);
+        });
+        
+        // 太陽の色も一時的に変更
+        if (this.sun && message.includes('ドラッグ')) {
+            const originalColor = this.sun.material.color.getHex();
+            this.sun.material.color.setHex(color);
+            setTimeout(() => {
+                this.sun.material.color.setHex(originalColor);
+            }, 500);
+        }
+    }
+    
     onSelectStart(event) {
         const controller = event.target;
+        this.showFeedback('コントローラー押下検出', 0x0099ff);
         
-        // ARモード時のみ太陽のドラッグを許可
-        if (this.isARMode() && this.sun) {
+        // XRモード時に太陽のドラッグを許可（テスト用にAR/VR両方）
+        if (this.renderer.xr.isPresenting && this.sun) {
             const intersections = this.getIntersections(controller);
             
             if (intersections.length > 0) {
@@ -581,9 +640,26 @@ class SolarSystemViewer {
                     
                     this.dragOffset.copy(sunPosition).sub(controllerPosition);
                     
-                    console.log('太陽のドラッグ開始');
+                    this.showFeedback('太陽ドラッグ開始', 0xff0000);
+                } else {
+                    this.showFeedback('他のオブジェクト選択', 0xffff00);
                 }
+            } else {
+                // 太陽以外でも試験的にドラッグを開始（デバッグ用）
+                this.showFeedback('強制ドラッグ開始', 0xff9900);
+                this.isDragging = true;
+                this.dragController = controller;
+                
+                const controllerPosition = new THREE.Vector3();
+                controller.getWorldPosition(controllerPosition);
+                
+                const sunPosition = new THREE.Vector3();
+                this.scaleGroup.getWorldPosition(sunPosition);
+                
+                this.dragOffset.copy(sunPosition).sub(controllerPosition);
             }
+        } else {
+            this.showFeedback('XRモードでない or 太陽なし', 0x999999);
         }
     }
     
@@ -603,8 +679,22 @@ class SolarSystemViewer {
         raycaster.ray.origin.setFromMatrixPosition(controller.matrixWorld);
         raycaster.ray.direction.set(0, 0, -1).applyMatrix4(tempMatrix);
         
-        // 太陽のみをチェック
-        return raycaster.intersectObjects([this.sun]);
+        // レイキャスターの範囲を設定
+        raycaster.far = 50;
+        
+        // 太陽系全体をチェック（デバッグ用）
+        const allObjects = [];
+        this.scaleGroup.traverse((child) => {
+            if (child.isMesh) {
+                allObjects.push(child);
+            }
+        });
+        
+        console.log('Checking intersections with', allObjects.length, 'objects');
+        const intersections = raycaster.intersectObjects(allObjects);
+        console.log('Found intersections:', intersections.map(i => i.object.userData?.type || 'unknown'));
+        
+        return intersections;
     }
     
     isARMode() {
