@@ -482,7 +482,7 @@ class SolarSystemViewer {
     
     positionSolarSystemForVR() {
         // XRモード時：視点から少し手前、少し上に配置
-        this.scaleGroup.position.set(0, 0.0, -5); // 目の高さより少し上、2m手前
+        this.scaleGroup.position.set(0, 0.0, -3); // 目の高さより少し上、2m手前
         console.log('太陽系位置をXRモード用に調整');
     }
     
