@@ -200,7 +200,7 @@ class SolarSystemViewer {
     
     createLights() {
         // 太陽光（ポイントライト）
-        this.sunLight = new THREE.PointLight(0xffffff, 2, 20);
+        this.sunLight = new THREE.PointLight(0xffffff, 1.5, 20);
         this.sunLight.position.set(0, 0, 0);
         this.sunLight.castShadow = true;
         this.sunLight.shadow.mapSize.width = 2048;
@@ -458,16 +458,31 @@ class SolarSystemViewer {
     onARStart() {
         console.log('ARモード開始 - サイズを0.3倍に縮小');
         this.setSystemScale(this.arScale);
+        this.positionSolarSystemForXR();
     }
     
     onVRStart() {
         console.log('VRモード開始 - デフォルトサイズ');
         this.setSystemScale(this.baseScale);
+        this.positionSolarSystemForXR();
     }
     
     onXREnd() {
         console.log('XRモード終了 - デフォルトサイズ');
         this.setSystemScale(this.baseScale);
+        this.resetSolarSystemPosition();
+    }
+    
+    positionSolarSystemForXR() {
+        // XRモード時：視点から少し手前、少し上に配置
+        this.scaleGroup.position.set(0, 1.5, -2); // 目の高さより少し上、2m手前
+        console.log('太陽系位置をXRモード用に調整');
+    }
+    
+    resetSolarSystemPosition() {
+        // 通常モード時：原点に配置
+        this.scaleGroup.position.set(0, 0, 0);
+        console.log('太陽系位置をデフォルトに復帰');
     }
     
     setSystemScale(scale) {
