@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebXR 太陽系ビューワー</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #000;
+            color: #fff;
+            font-family: Arial, sans-serif;
+            overflow: hidden;
+        }
+        
+        #container {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+        }
+        
+        #ui {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 100;
+        }
+        
+        .button {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: #fff;
+            padding: 10px 20px;
+            margin: 5px;
+            border-radius: 5px;
+            cursor: pointer;
+            display: inline-block;
+            text-decoration: none;
+        }
+        
+        .button:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        
+        .button:disabled {
+            background: rgba(100, 100, 100, 0.2);
+            cursor: not-allowed;
+        }
+        
+        #info {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            font-size: 12px;
+            opacity: 0.7;
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <div id="ui">
+            <button id="arButton" class="button">AR開始</button>
+            <button id="vrButton" class="button">VR開始</button>
+        </div>
+        <div id="info">
+            PC: マウスドラッグで回転、ホイールでズーム、右クリック+ドラッグでパン<br>
+            Quest: ジョイスティック上下でスケール調整
+        </div>
+    </div>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.158.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.158.0/examples/jsm/"
+            }
+        }
+    </script>
+    <script type="module" src="js/components.js"></script>
+</body>
+</html>
